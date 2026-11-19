@@ -45,7 +45,7 @@ export const ELEMENT_STYLE = {
   air:   { panel: 0xc8d8e6, glow: 0xbff0ff },
 };
 
-// game action -> clip name in UAL1_Standard.glb
+// game action -> clip name in Anims.glb (from the Universal Animation Library)
 export const CLIP_NAMES = {
   idle: 'Idle_Loop', run: 'Jog_Fwd_Loop', sprint: 'Sprint_Loop', back: 'Walk_Loop',
   punchA: 'Punch_Jab', punchB: 'Punch_Cross', cast: 'Spell_Simple_Shoot', stomp: 'Jump_Land',
@@ -61,7 +61,7 @@ export async function loadLooks(onProgress = () => {}) {
   const jobs = [
     ...Object.entries(BODY_FILES).map(([k, f]) => [f, 'body', k]),
     ...hairNames.map(n => [n, 'hair']),
-    ['UAL1_Standard', 'anim'],
+    ['Anims', 'anim'], // the 13 clips the game uses, cut from the Universal Animation Library
   ];
   let done = 0;
   await Promise.all(jobs.map(([n, kind, key]) =>

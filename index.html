@@ -67,6 +67,13 @@
   .overlay h1 { margin: 0; font-size: clamp(36px, 7vw, 72px); font-weight: 900; letter-spacing: 6px;
     background: linear-gradient(90deg, #ff7a2f, #4fc0ff, #c49a6c, #e8f6ff); -webkit-background-clip: text; background-clip: text; color: transparent; text-align: center; }
   .overlay p { margin: 0; color: var(--muted); text-align: center; max-width: 620px; }
+  #endStats table { border-collapse: collapse; background: var(--panel); border-radius: 12px; overflow: hidden; font-size: 14px; min-width: min(420px, 92vw); }
+  #endStats th, #endStats td { padding: 7px 14px; text-align: center; }
+  #endStats th { color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; background: rgba(255,255,255,.04); }
+  #endStats td:first-child, #endStats th:first-child { text-align: left; }
+  #endStats tr.you td { color: var(--gold); font-weight: 800; }
+  #endStats .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; }
+  #endStats .mvp { background: var(--gold); color: #1a1400; font-size: 10px; font-weight: 900; border-radius: 4px; padding: 1px 5px; margin-left: 6px; letter-spacing: 1px; }
   .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 190px)); gap: 14px; }
   @media (max-width: 860px) { .cards { grid-template-columns: repeat(2, minmax(0, 190px)); } }
   .card { background: var(--panel); border: 2px solid rgba(255,255,255,.1); border-radius: 14px; padding: 16px; cursor: pointer; text-align: center; transition: transform .15s, border-color .15s, opacity .2s; }
@@ -224,6 +231,7 @@
 <div id="end" class="overlay hidden">
   <h1 id="endTitle">VICTORY</h1>
   <p id="endSub"></p>
+  <div id="endStats"></div>
   <div class="row">
     <button class="btn" id="again">Play again</button>
     <button class="btn" id="change">Change element</button>
@@ -370,7 +378,7 @@ const QUALITY = [
   { name: 'Medium', maxPixels: 1.4e6, bloom: true,  shadow: 1024 },
   { name: 'High',   maxPixels: 2.6e6, bloom: true,  shadow: 2048 },
 ];
-let qIdx = 1;
+let qIdx = matchMedia('(pointer: coarse)').matches ? 0 : 1; // phones/tablets start on Low for smooth play
 try { const s = localStorage.getItem('aoe-quality'); if (s !== null && QUALITY[+s]) qIdx = +s; } catch (e) {}
 function applyQuality(announceIt = false) {
   const q = QUALITY[qIdx];
@@ -942,9 +950,11 @@ function makeFighter(team, el, slot, isHuman, look) {
     vy: 0, strain: 0, line: 0, out: false, falling: false, cd: { p: 0, s: 0, d: 0 },
     dodgeT: 0, stunT: 0, flashT: 0, punchIdx: 0, auraT: Math.random() * 0.2,
     ai: { think: 0, target: null, strafe: 0, depthOff: 2, fireDelay: 0.5, skill: 0.55 + Math.random() * 0.35, dodge: 0.3, aggr: 1 },
+    stats: { hits: 0, kos: 0, outs: 0 }, lastHitBy: null, lastHitT: -99,
   };
 }
 const active = (f) => !f.out && !f.falling;
+const fighterName = (f) => f.human ? 'You' : `${TEAM[f.team].name} ${ELEMENTS[f.el].name}`;
 const depthOf = (f) => f.side * f.pos.x;
 
 // ================= GAME STATE =================
@@ -1136,6 +1146,7 @@ function doSpecial(f, dir) {
         if (d < 10 && to.dot(dir) > Math.cos(0.6)) {
           e.kb.addScaledVector(to, 9 * (1 + e.strain / 55) * (1 - d / 14));
           e.strain = Math.min(160, e.strain + 6); e.stunT = 0.25; e.flashT = 0.12;
+          f.stats.hits++; e.lastHitBy = f; e.lastHitT = perfNow;
           playOnce(e.mesh, 'hitA', 1.6);
         }
       }
@@ -1165,6 +1176,7 @@ function killProjectile(p, fx = true) {
   if (fx) fxHit(p.pos, p.el, p.kind === 'wave' ? 12 : 4, p.vel.clone().setY(0).normalize().negate());
 }
 function hitFighter(f, p) {
+  p.owner.stats.hits++; f.lastHitBy = p.owner; f.lastHitT = perfNow;
   const dir = p.vel.clone().setY(0).normalize();
   const mult = 1 + f.strain / 55, power = p.force * mult;
   f.kb.addScaledVector(dir, power);
@@ -1360,6 +1372,52 @@ document.getElementById('tPause').addEventListener('pointerdown', (e) => {
 });
 const nearestEnemy = (f) => { let best = null, bd = Infinity; for (const e of fighters) { if (e.team === f.team || !active(e)) continue; const d = e.pos.distanceToSquared(f.pos); if (d < bd) { bd = d; best = e; } } return best; };
 
+// ---- game controller (Xbox / PlayStation, "standard" mapping) ----
+// Left stick move · right stick aim (or auto-aim) · RT/A attack · B/RB special · X/LB dodge · Start pause
+// Menu: D-pad/left stick picks the element, A starts · End screen: A play again, B change element
+let padMode = false, padPrev = [], padAxisLatch = 0;
+const pad = { mx: 0, my: 0, ax: 0, ay: 0, atk: false };
+addEventListener('gamepadconnected', () => toast('🎮 Controller connected'));
+const dz = (v) => Math.abs(v) < 0.2 ? 0 : v;
+function pollPad() {
+  const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(p => p && p.connected) : null;
+  if (!gp) { pad.atk = false; pad.mx = pad.my = 0; return; }
+  const btn = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed);
+  const press = (i) => btn(i) && !padPrev[i];
+  const anyInput = gp.buttons.some(b => b.pressed) || gp.axes.some(a => Math.abs(a) > 0.5);
+  if (anyInput && !padMode) { padMode = true; touchMode = false; }
+  pad.mx = dz(gp.axes[0] || 0); pad.my = dz(gp.axes[1] || 0); pad.ax = dz(gp.axes[2] || 0); pad.ay = dz(gp.axes[3] || 0);
+  if (anyModal()) {
+    if ((press(0) || press(1)) && !fbOpen) { closeModal(howEl); closeModal(setEl); }
+  } else if (state === 'menu' && looksReady) {
+    let step = (press(15) ? 1 : 0) - (press(14) ? 1 : 0);
+    if (!step && Math.abs(pad.mx) > 0.6 && padAxisLatch === 0) step = Math.sign(pad.mx);
+    padAxisLatch = Math.abs(pad.mx) > 0.6 ? 1 : 0;
+    if (step) { previewEl = ORDER[(ORDER.indexOf(previewEl) + step + ORDER.length) % ORDER.length]; rebuildPreview(); toast(`${ELEMENTS[previewEl].icon} ${ELEMENTS[previewEl].name} — press A to fight`); }
+    if (press(0)) startMatch(previewEl);
+  } else if (state === 'over') {
+    if (press(0)) startMatch(chosenEl);
+    if (press(1)) document.getElementById('change').click();
+  } else {
+    if (press(9) && ['play', 'countdown', 'intro', 'roundEnd'].includes(state)) { paused = !paused; document.getElementById('pause').classList.toggle('hidden', !paused); }
+    if (!paused) {
+      if (state === 'intro' && press(0)) skipIntro = true;
+      if (press(1) || press(5)) specialQ = true;
+      if (press(2) || press(4)) dodgeQ = true;
+    }
+    pad.atk = btn(7) || btn(0);
+  }
+  padPrev = gp.buttons.map(b => b.pressed);
+}
+const abHints = { p: document.querySelector('#abP small'), s: document.querySelector('#abS small'), d: document.querySelector('#abD small') };
+let hintMode = '';
+function updateHints() {
+  const mode = padMode ? 'pad' : 'kb';
+  if (mode === hintMode) return; hintMode = mode;
+  const H = padMode ? ['RT / A', 'B / RB', 'X / LB'] : ['Left click', 'Right click / E', 'Space'];
+  abHints.p.textContent = H[0]; abHints.s.textContent = H[1]; abHints.d.textContent = H[2];
+}
+
 let fpsT = 0, fpsFrames = 0;
 const fpsEl = document.getElementById('fps');
 function updateTopUI(raw) {
@@ -1380,7 +1438,7 @@ addEventListener('keydown', (e) => {
   if (fbOpen) { if (e.code === 'Escape') closeFeedback(); return; }
   if (anyModal()) { if (e.code === 'Escape') { closeModal(howEl); closeModal(setEl); } return; }
   if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
-  if (/^Key[WASD]$/.test(e.code) && touchMode) { touchMode = false; }
+  if (/^Key[WASD]$/.test(e.code)) { touchMode = false; padMode = false; }
   keys[e.code] = true;
   if (e.code === 'KeyE') specialQ = true;
   if (e.code === 'Space') { dodgeQ = true; e.preventDefault(); if (state === 'intro') skipIntro = true; }
@@ -1394,19 +1452,21 @@ addEventListener('pointermove', (e) => { mouse.set(e.clientX / innerWidth * 2 - 
 addEventListener('pointerdown', (e) => {
   if (anyModal() || e.target.closest('#topBtns, #touch, .modal, #fb')) return;
   if (e.pointerType === 'touch') { touchMode = true; initAudio(); if (state === 'intro') skipIntro = true; return; }
-  if (e.pointerType === 'mouse' && touchMode && state !== 'menu') touchMode = false;
+  if (e.pointerType === 'mouse' && state !== 'menu') { touchMode = false; padMode = false; }
   initAudio(); if (state === 'intro') skipIntro = true; if (e.button === 0) mouseDown = true; if (e.button === 2) specialQ = true; });
 addEventListener('pointerup', (e) => { if (e.button === 0) mouseDown = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
 
 function controlHuman(f) {
   const fwd = -f.side;
-  if (touchMode) {
-    f.want.set(fwd * touch.y, 0, touch.x); if (f.want.lengthSq() > 1) f.want.normalize();
+  if (touchMode || padMode) {
+    if (padMode) f.want.set(fwd * -pad.my, 0, pad.mx); else f.want.set(fwd * touch.y, 0, touch.x);
+    if (f.want.lengthSq() > 1) f.want.normalize();
     const t = nearestEnemy(f), dir = v3(-f.side, 0, 0);
-    if (t) { const d = t.pos.clone().addScaledVector(t.mv, t.pos.distanceTo(f.pos) / ELEMENTS[f.el].primary.speed * 0.6).sub(f.pos); d.y = 0; if (d.lengthSq() > 0.01) dir.copy(d.normalize()); }
+    if (padMode && Math.hypot(pad.ax, pad.ay) > 0.4) dir.set(fwd * -pad.ay, 0, pad.ax).normalize(); // right stick aims
+    else if (t) { const d = t.pos.clone().addScaledVector(t.mv, t.pos.distanceTo(f.pos) / ELEMENTS[f.el].primary.speed * 0.6).sub(f.pos); d.y = 0; if (d.lengthSq() > 0.01) dir.copy(d.normalize()); }
     f.facing.copy(dir);
-    if (touch.atk) attack(f, dir);
+    if (touch.atk || pad.atk) attack(f, dir);
     if (specialQ) doSpecial(f, dir);
     if (dodgeQ) dodge(f, f.want.lengthSq() > 0.01 ? f.want : v3(0, 0, f.pos.z > 0 ? -1 : 1));
     specialQ = dodgeQ = false;
@@ -1499,7 +1559,10 @@ function updateFighter(f, dt) {
     if (f.pos.y < WATER_Y + 0.2) {
       f.out = true; m.root.visible = false; f.label.style.display = 'none';
       fxSplash(f.pos.x, f.pos.z); sfx('splash');
-      toast(`${TEAM[f.team].name} ${ELEMENTS[f.el].name}${f.human ? ' (you)' : ''} is OUT!`, TEAM[f.team].css);
+      f.stats.outs++;
+      const by = f.lastHitBy && perfNow - f.lastHitT < 5 ? f.lastHitBy : null;
+      if (by) by.stats.kos++;
+      toast(`${fighterName(f)} ${f.human ? 'are' : 'is'} OUT!${by ? ` (knocked out by ${by.human ? 'you' : fighterName(by)})` : ''}`, TEAM[f.team].css);
       if (f.human) document.getElementById('spectate').classList.remove('hidden');
     }
     return;
@@ -1609,6 +1672,13 @@ function showEnd() {
   for (const f of fighters) { if (!f.out) continue; f.out = false; f.falling = false; f.pos.set(f.side * 3, 0, (f.slot - 1) * 4.5); f.mesh.root.visible = true; f.mesh.root.rotation.set(0, 0, 0); }
   document.getElementById('endTitle').textContent = won ? 'VICTORY' : 'DEFEAT';
   document.getElementById('endSub').textContent = `Blue ${wins[0]} – ${wins[1]} Red · ${DIFFS[difficulty].name}`;
+  // match stats + MVP (knock-outs count most, then hits; falling out costs a little)
+  const score = (f) => f.stats.kos * 3 + f.stats.hits * 0.2 - f.stats.outs;
+  const mvp = fighters.reduce((a, b) => score(b) > score(a) ? b : a);
+  const rows = [...fighters].sort((a, b) => a.team - b.team || score(b) - score(a)).map(f =>
+    `<tr class="${f.human ? 'you' : ''}"><td><span class="dot" style="background:${TEAM[f.team].css}"></span>${fighterName(f)}${f.human ? '' : ''} <span style="color:${ELEMENTS[f.el].css}">${f.human ? '· ' + ELEMENTS[f.el].name : ''}</span>${f === mvp ? '<span class="mvp">MVP</span>' : ''}</td>
+     <td>${f.stats.hits}</td><td>${f.stats.kos}</td><td>${f.stats.outs}</td></tr>`).join('');
+  document.getElementById('endStats').innerHTML = `<table><thead><tr><th>Fighter</th><th>Hits</th><th>Knock-outs</th><th>Fell out</th></tr></thead><tbody>${rows}</tbody></table>`;
   document.getElementById('end').classList.remove('hidden');
   document.getElementById('hud').classList.add('hidden');
   for (const f of fighters) f.label.style.display = 'none';
@@ -1715,6 +1785,7 @@ function frame() {
   requestAnimationFrame(frame);
   const raw = clock.getDelta();
   const rdt = Math.min(raw, 1 / 15); // don't turn low frame rates into slow motion
+  pollPad(); updateHints();
   if (!paused) advance(rdt);
   updateTopUI(raw);
   if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera);
@@ -1808,7 +1879,7 @@ loadLooks((d, n) => { document.getElementById('loading').textContent = `Loading 
 // test hook
 window.__game = { get state() { return state; }, get fighters() { return fighters; }, get F() { return F; }, get wins() { return wins; }, get round() { return round; }, startMatch,
   step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) advance(1 / 60); updateTopUI(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
-  prof: PROF };
+  prof: PROF, pollPad };
 </script>
 </body>
 </html>
