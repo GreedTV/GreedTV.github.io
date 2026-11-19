@@ -6,6 +6,10 @@
 <title>Arena of Elements</title>
 <meta name="description" content="3v3 elemental arena game in your browser. Pick Fire, Water, Earth or Air, push the other team back across the zones and knock them into the water.">
 <meta name="theme-color" content="#070b18">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Arena of Elements">
 <meta property="og:description" content="3v3 elemental arena game — free to play in your browser, on PC or phone.">
@@ -85,6 +89,21 @@
   #loading { color: var(--gold); font-weight: 700; min-height: 1.4em; }
   .btn { pointer-events: auto; background: #1d2a55; color: var(--text); border: 2px solid var(--blue); border-radius: 10px; padding: 10px 22px; font-size: 16px; font-weight: 800; cursor: pointer; }
   .btn:hover { background: #2a3b75; }
+  .btn.ghost { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.22); }
+  .btn.ghost:hover { border-color: var(--gold); color: var(--gold); }
+  .lvl { display: flex; align-items: center; gap: 10px; }
+  .lvl b { color: var(--gold); font-size: 18px; white-space: nowrap; }
+  .xpbar { flex: 1; height: 10px; background: rgba(0,0,0,.5); border-radius: 5px; overflow: hidden; }
+  .xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffb020, #ffd54a); transition: width .8s; }
+  .lvl small { color: var(--muted); white-space: nowrap; }
+  .cgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .cgrid div { background: #070b18; border-radius: 8px; padding: 10px; text-align: center; }
+  .cgrid b { display: block; font-size: 22px; } .cgrid span { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  #endXp { width: min(420px, 92vw); display: flex; flex-direction: column; gap: 6px; }
+  #endXp .gain { text-align: center; font-weight: 800; color: var(--gold); }
+  #endXp .up { text-align: center; font-weight: 900; color: #fff; text-shadow: 0 0 12px var(--gold); letter-spacing: 2px; }
+  .pmenu { display: flex; flex-direction: column; gap: 10px; width: min(280px, 90vw); }
+  .pmenu .btn { width: 100%; }
   .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   kbd { background: #222b4a; border-radius: 4px; padding: 1px 6px; font-family: inherit; color: var(--text); }
   #credit { position: fixed; bottom: 8px; right: 12px; font-size: 11px; color: #5d6890; }
@@ -221,6 +240,7 @@
   <div class="menuBottom">
     <div id="loading">Loading fighters…</div>
     <div id="picker" class="hidden">
+      <div class="pk"><span>Arena</span><button data-arena="night">Night</button><button data-arena="sunset">Sunset</button><button data-arena="day">Day</button><button data-arena="random">🎲</button></div>
       <div class="pk"><span>Difficulty</span><button data-diff="easy">Easy</button><button data-diff="normal">Normal</button><button data-diff="hard">Hard</button></div>
       <div class="pk"><span>Body</span><button data-body="male">Male</button><button data-body="female">Female</button></div>
       <div class="pk"><span>Outfit</span><button id="outPrev" aria-label="Previous outfit">◀</button><b id="outName"></b><button id="outNext" aria-label="Next outfit">▶</button></div>
@@ -237,15 +257,27 @@
   <h1 id="endTitle">VICTORY</h1>
   <p id="endSub"></p>
   <div id="endStats"></div>
+  <div id="endXp"></div>
   <div class="row">
     <button class="btn" id="again">Play again</button>
     <button class="btn" id="change">Change element</button>
   </div>
 </div>
 
-<div id="pause" class="overlay hidden"><h1>PAUSED</h1><p>Press <kbd>P</kbd> or tap anywhere to continue</p></div>
+<div id="pause" class="overlay hidden">
+  <h1>PAUSED</h1>
+  <div class="pmenu">
+    <button type="button" class="btn" id="pResume">▶ Resume</button>
+    <button type="button" class="btn ghost" id="pRestart">↻ Restart match</button>
+    <button type="button" class="btn ghost" id="pSettings">⚙️ Settings</button>
+    <button type="button" class="btn ghost" id="pQuit">⌂ Quit to menu</button>
+  </div>
+  <p class="kbHint" style="font-size:13px"><kbd>P</kbd> or <kbd>Esc</kbd> to resume</p>
+</div>
 <div id="credit">Characters &amp; animations: Quaternius (CC0)</div>
 <div id="topBtns">
+  <button id="installBtn" class="tb" type="button" hidden>📲 Install</button>
+  <button id="carBtn" class="tb" type="button">🏅 <span id="carLv">Lv 1</span></button>
   <button id="howBtn" class="tb" type="button">❓ How to play</button>
   <button id="setBtn" class="tb" type="button" aria-label="Settings">⚙️</button>
   <button id="fbBtn" class="tb" type="button">💬 Feedback</button>
@@ -265,6 +297,16 @@
     </ol>
     <div class="howkeys" id="howKeys"></div>
     <div class="actions"><button type="button" class="btn" id="howClose">Got it</button></div>
+  </div>
+</div>
+
+<div id="career" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="carTitle">
+  <div class="box">
+    <h2 id="carTitle">Your career</h2>
+    <div class="lvl"><b id="cLv">Level 1</b><div class="xpbar"><i id="cXpBar"></i></div><small id="cXpTxt"></small></div>
+    <div class="cgrid" id="cGrid"></div>
+    <p class="note" style="margin:0;font-size:12px;color:var(--muted)">Saved in this browser. Earn XP every match: more for winning, knock-outs, hits and harder difficulty.</p>
+    <div class="actions" style="gap:8px"><button type="button" class="btn ghost" id="cReset">Reset</button><button type="button" class="btn" id="cClose">Close</button></div>
   </div>
 </div>
 
@@ -408,7 +450,9 @@ function applyQuality(announceIt = false) {
 const pmrem = new THREE.PMREMGenerator(renderer);
 const envTex = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
 
-scene.add(new THREE.HemisphereLight(0xa8bfff, 0x201828, 1.0));
+const hemi = new THREE.HemisphereLight(0xa8bfff, 0x201828, 1.0);
+scene.add(hemi);
+const teamLights = [], beamMats = [], lampMats = [];
 const sun = new THREE.DirectionalLight(0xfff4e6, 2.4);
 sun.position.set(-8, 30, 14);
 sun.castShadow = true;
@@ -419,7 +463,7 @@ scene.add(sun);
 for (const t of TEAM) {
   const l = new THREE.PointLight(t.color, 130, 0, 2);
   l.position.set(t.side * 20, 7, 0);
-  scene.add(l);
+  scene.add(l); teamLights.push(l);
 }
 
 // ================= TEXTURES =================
@@ -557,15 +601,44 @@ topRing.rotation.x = Math.PI / 2; topRing.position.y = 17; scene.add(topRing);
     tower.position.set(base.x, 12, base.z); scene.add(tower);
     const lampPos = new THREE.Vector3(base.x * 0.97, 32, base.z * 0.97);
     const lamp = new THREE.Mesh(new THREE.BoxGeometry(7, 3.5, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 5.6, 4.6) }));
-    lamp.position.copy(lampPos); lamp.lookAt(0, 0, 0); scene.add(lamp);
+    lamp.position.copy(lampPos); lamp.lookAt(0, 0, 0); scene.add(lamp); lampMats.push(lamp.material);
     const target = new THREE.Vector3(Math.sign(base.x) * 7, 0, Math.sign(base.z) * 3);
     const dir = lampPos.clone().sub(target); const L = dir.length(); dir.normalize();
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 9, L, 32, 1, true),
       new THREE.MeshBasicMaterial({ color: 0xfff0d0, alphaMap: beamTex, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
     beam.position.copy(target).addScaledVector(dir, L / 2);
     beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-    scene.add(beam);
+    scene.add(beam); beamMats.push(beam.material);
   }
+}
+// ---- ARENA THEMES: same stadium, different time of day ----
+function skyTex(top, mid, bottom) {
+  const t = canvasTex(4, 256, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, top); gr.addColorStop(0.55, mid); gr.addColorStop(1, bottom);
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+  return t;
+}
+const THEMES = {
+  night:  { name: 'Night',  sky: ['#04060f', '#070b18', '#0b1024'], fog: 0x060914, fogNear: 80, hemi: [0xa8bfff, 0x201828, 1.0], sun: [0xfff4e6, 2.4], sunPos: [-8, 30, 14],
+            team: 130, beam: 0.1, lamp: 1, water: 0x0a4a68, stand: 0x141829, ring: [2, 1.8, 1.3] },
+  sunset: { name: 'Sunset', sky: ['#1d1238', '#a3405a', '#ff9a4a'], fog: 0x8a4a58, fogNear: 90, hemi: [0xffc49a, 0x3a2030, 1.35], sun: [0xffa060, 3.0], sunPos: [-40, 14, 18],
+            team: 80, beam: 0.035, lamp: 0.6, water: 0x3b3a6a, stand: 0x2a1c26, ring: [2.4, 1.4, 0.8] },
+  day:    { name: 'Day',    sky: ['#3d86e0', '#8ec2f5', '#d6ecff'], fog: 0xa9d2f5, fogNear: 110, hemi: [0xe4f0ff, 0x6a6352, 1.7], sun: [0xffffff, 3.3], sunPos: [-14, 40, 20],
+            team: 35, beam: 0, lamp: 0.35, water: 0x1a7fa8, stand: 0x4c5466, ring: [1, 1, 1] },
+};
+let arenaChoice = 'night', currentTheme = 'night';
+try { const a = localStorage.getItem('aoe-arena'); if (THEMES[a] || a === 'random') arenaChoice = a; } catch (e) {}
+function applyTheme(name) {
+  const T = THEMES[name] || THEMES.night; currentTheme = name;
+  scene.background = skyTex(...T.sky);
+  scene.fog.color.set(T.fog); scene.fog.near = T.fogNear; scene.fog.far = T.fogNear + 120;
+  hemi.color.set(T.hemi[0]); hemi.groundColor.set(T.hemi[1]); hemi.intensity = T.hemi[2];
+  sun.color.set(T.sun[0]); sun.intensity = T.sun[1]; sun.position.set(...T.sunPos);
+  for (const l of teamLights) l.intensity = T.team;
+  for (const m of beamMats) { m.opacity = T.beam; m.visible = T.beam > 0; }
+  for (const m of lampMats) m.color.setRGB(6 * T.lamp, 5.6 * T.lamp, 4.6 * T.lamp);
+  waterMat.color.set(T.water); stand.material.color.set(T.stand); topRing.material.color.setRGB(...T.ring);
 }
 // banners on the stands
 function makeBanner(text, bg, w, h, pos) {
@@ -1065,6 +1138,7 @@ function rebuildPreview() {
 function renderPicker() {
   document.querySelectorAll('[data-body]').forEach(b => b.classList.toggle('on', b.dataset.body === playerLook.body));
   document.querySelectorAll('[data-diff]').forEach(b => b.classList.toggle('on', b.dataset.diff === difficulty));
+  document.querySelectorAll('[data-arena]').forEach(b => b.classList.toggle('on', b.dataset.arena === arenaChoice));
   const st = HAIR_STYLES[playerLook.body];
   playerLook.hair = ((playerLook.hair % st.length) + st.length) % st.length;
   document.getElementById('hairName').textContent = st[playerLook.hair].name;
@@ -1074,6 +1148,10 @@ function renderPicker() {
 }
 function lookChanged() { try { localStorage.setItem('aoe-look', JSON.stringify(playerLook)); } catch (e) {} renderPicker(); rebuildPreview(); }
 document.querySelectorAll('[data-body]').forEach(b => b.addEventListener('click', () => { if (playerLook.body !== b.dataset.body) { playerLook.body = b.dataset.body; playerLook.hair = 0; lookChanged(); } }));
+document.querySelectorAll('[data-arena]').forEach(b => b.addEventListener('click', () => {
+  arenaChoice = b.dataset.arena; try { localStorage.setItem('aoe-arena', arenaChoice); } catch (e) {}
+  applyTheme(arenaChoice === 'random' ? Object.keys(THEMES)[(Math.random() * 3) | 0] : arenaChoice); renderPicker();
+}));
 document.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => {
   difficulty = b.dataset.diff; try { localStorage.setItem('aoe-diff', difficulty); } catch (e) {} renderPicker();
 }));
@@ -1101,6 +1179,7 @@ function startMatch(el) {
   const mates = shuffle(ORDER.filter(e => e !== el)).slice(0, 2);
   const blue = [el, ...mates], red = shuffle(ORDER).slice(0, 3);
   removePreview();
+  applyTheme(arenaChoice === 'random' ? Object.keys(THEMES)[(Math.random() * 3) | 0] : arenaChoice);
   const used = new Set([lookKey(playerLook)]);
   fighters.push(makeFighter(0, blue[0], 1, true, playerLook),
     makeFighter(0, blue[1], 0, false, randomLook(blue[1], 0, used)), makeFighter(0, blue[2], 2, false, randomLook(blue[2], 0, used)));
@@ -1270,7 +1349,7 @@ function useUlt(f, dir) {
   if (f.ult < 100 || !active(f)) return;
   f.ult = 0;
   const fwd = v3(-f.side, 0, 0), E = ELEMENTS[f.el];
-  if (f.human) { announce(ULT_NAMES[f.el] + '!', E.css); say(ULT_NAMES[f.el].toLowerCase()); }
+  if (f.human) { announce(ULT_NAMES[f.el] + '!', E.css); say(ULT_NAMES[f.el].toLowerCase()); career.ultimates++; }
   else toast(`${fighterName(f)}: ${ULT_NAMES[f.el]}!`, TEAM[f.team].css);
   sfx('ult', f.el); crowdReact(1); hitStop = Math.max(hitStop, 0.12);
   shake = Math.max(shake, f.human ? 0.6 : 0.3);
@@ -1462,7 +1541,7 @@ document.getElementById('fbCopy').addEventListener('click', async () => {
 // ---- How to play + Settings panels ----
 const howEl = document.getElementById('howto'), setEl = document.getElementById('settings'), topBtns = document.getElementById('topBtns');
 let modalPausedByUs = false;
-const anyModal = () => fbOpen || !howEl.classList.contains('hidden') || !setEl.classList.contains('hidden');
+const anyModal = () => fbOpen || document.querySelector('.modal:not(.hidden)') !== null;
 function openModal(el) {
   mouseDown = false; for (const k in keys) keys[k] = false;
   if (['play', 'countdown', 'intro', 'roundEnd'].includes(state) && !paused) { paused = true; modalPausedByUs = true; }
@@ -1531,7 +1610,7 @@ document.getElementById('tDdg').addEventListener('pointerdown', (e) => { initAud
 document.getElementById('tUlt').addEventListener('pointerdown', (e) => { initAudio(); ultQ = true; e.preventDefault(); });
 document.getElementById('tPause').addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  if (['play', 'countdown', 'intro', 'roundEnd'].includes(state)) { paused = !paused; document.getElementById('pause').classList.toggle('hidden', !paused); }
+  if (['play', 'countdown', 'intro', 'roundEnd'].includes(state)) setPaused(!paused);
 });
 const nearestEnemy = (f) => { let best = null, bd = Infinity; for (const e of fighters) { if (e.team === f.team || !active(e)) continue; const d = e.pos.distanceToSquared(f.pos); if (d < bd) { bd = d; best = e; } } return best; };
 
@@ -1551,7 +1630,7 @@ function pollPad() {
   if (anyInput && !padMode) { padMode = true; touchMode = false; }
   pad.mx = dz(gp.axes[0] || 0); pad.my = dz(gp.axes[1] || 0); pad.ax = dz(gp.axes[2] || 0); pad.ay = dz(gp.axes[3] || 0);
   if (anyModal()) {
-    if ((press(0) || press(1)) && !fbOpen) { closeModal(howEl); closeModal(setEl); }
+    if ((press(0) || press(1)) && !fbOpen) document.querySelectorAll('.modal:not(.hidden)').forEach(closeModal);
   } else if (state === 'menu' && looksReady) {
     let step = (press(15) ? 1 : 0) - (press(14) ? 1 : 0);
     if (!step && Math.abs(pad.mx) > 0.6 && padAxisLatch === 0) step = Math.sign(pad.mx);
@@ -1562,7 +1641,9 @@ function pollPad() {
     if (press(0)) startMatch(chosenEl);
     if (press(1)) document.getElementById('change').click();
   } else {
-    if (press(9) && ['play', 'countdown', 'intro', 'roundEnd'].includes(state)) { paused = !paused; document.getElementById('pause').classList.toggle('hidden', !paused); }
+    if (press(9) && ['play', 'countdown', 'intro', 'roundEnd'].includes(state)) setPaused(!paused);
+    else if (paused && press(0)) setPaused(false);
+    else if (paused && press(1)) quitToMenu();
     if (!paused) {
       if (state === 'intro' && press(0)) skipIntro = true;
       if (press(1) || press(5)) specialQ = true;
@@ -1600,7 +1681,7 @@ const keys = {}; let mouseDown = false, specialQ = false, dodgeQ = false, ultQ =
 const mouse = new THREE.Vector2(), ray = new THREE.Raycaster(), aimPlane = new THREE.Plane(v3(0, 1, 0), -1.35), aimPt = v3();
 addEventListener('keydown', (e) => {
   if (fbOpen) { if (e.code === 'Escape') closeFeedback(); return; }
-  if (anyModal()) { if (e.code === 'Escape') { closeModal(howEl); closeModal(setEl); } return; }
+  if (anyModal()) { if (e.code === 'Escape') document.querySelectorAll('.modal:not(.hidden)').forEach(closeModal); return; }
   if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
   if (/^Key[WASD]$/.test(e.code)) { touchMode = false; padMode = false; }
   keys[e.code] = true;
@@ -1609,7 +1690,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Space') { dodgeQ = true; e.preventDefault(); if (state === 'intro') skipIntro = true; }
   if (e.code === 'KeyM') toggleMute();
   if (e.code === 'KeyG') { qIdx = (qIdx + 1) % QUALITY.length; applyQuality(true); }
-  if (e.code === 'KeyP' && !['menu', 'over', 'loading'].includes(state) && !anyModal()) { paused = !paused; document.getElementById('pause').classList.toggle('hidden', !paused); }
+  if ((e.code === 'KeyP' || e.code === 'Escape') && !['menu', 'over', 'loading'].includes(state) && !anyModal()) setPaused(!paused);
 });
 addEventListener('keyup', (e) => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; });
@@ -1712,7 +1793,8 @@ function controlAI(f, dt) {
 const lerpAngle = (a, b, t) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return a + d * t; };
 function toast(text, color = '#fff') {
   const t = document.createElement('div'); t.className = 'toast'; t.textContent = text; t.style.color = color;
-  document.getElementById('toasts').appendChild(t); setTimeout(() => t.remove(), 2500);
+  const box = document.getElementById('toasts'); box.appendChild(t); setTimeout(() => t.remove(), 2500);
+  while (box.children.length > 4) box.firstChild.remove(); // keep at most 4 messages on screen
 }
 function announce(text, color = '#fff') {
   const a = document.getElementById('announce'); a.textContent = text; a.style.color = color;
@@ -1837,6 +1919,7 @@ function checkRoundEnd() {
 function showEnd() {
   state = 'over';
   document.getElementById('announce').classList.remove('show');
+  document.getElementById('toasts').innerHTML = '';
   const won = wins[0] > wins[1];
   roundWinner = won ? 0 : 1;
   for (const f of fighters) { if (!f.out) continue; f.out = false; f.falling = false; f.pos.set(f.side * 3, 0, (f.slot - 1) * 4.5); f.mesh.root.visible = true; f.mesh.root.rotation.set(0, 0, 0); }
@@ -1848,6 +1931,15 @@ function showEnd() {
   const rows = [...fighters].sort((a, b) => a.team - b.team || score(b) - score(a)).map(f =>
     `<tr class="${f.human ? 'you' : ''}"><td><span class="dot" style="background:${TEAM[f.team].css}"></span>${fighterName(f)}${f.human ? '' : ''} <span style="color:${ELEMENTS[f.el].css}">${f.human ? '· ' + ELEMENTS[f.el].name : ''}</span>${f === mvp ? '<span class="mvp">MVP</span>' : ''}</td>
      <td>${f.stats.hits}</td><td>${f.stats.kos}</td><td>${f.stats.outs}</td></tr>`).join('');
+  const rec = recordMatch(won);
+  const endXp = document.getElementById('endXp');
+  if (rec) {
+    const L = levelInfo(career.xp);
+    endXp.innerHTML = `<div class="gain">+${rec.xp} XP</div>
+      <div class="lvl"><b>Level ${L.lvl}</b><div class="xpbar"><i style="width:${(L.into / L.need) * 100}%"></i></div><small>${L.into} / ${L.need}</small></div>
+      ${rec.after > rec.before ? `<div class="up">⭐ LEVEL UP! ⭐</div>` : ''}
+      ${career.streak >= 2 ? `<div class="gain" style="color:#ff9a3d">🔥 ${career.streak} wins in a row</div>` : ''}`;
+  } else endXp.innerHTML = '';
   document.getElementById('endStats').innerHTML = `<table><thead><tr><th>Fighter</th><th>Hits</th><th>Knock-outs</th><th>Fell out</th></tr></thead><tbody>${rows}</tbody></table>`;
   document.getElementById('end').classList.remove('hidden');
   document.getElementById('hud').classList.add('hidden');
@@ -1906,7 +1998,71 @@ function updateFloats(rdt) {
 const timerEl = document.getElementById('timer');
 const touchCd = { p: document.querySelector('#tAtk .cd'), s: document.querySelector('#tSpc .cd'), d: document.querySelector('#tDdg .cd'), u: document.querySelector('#tUlt .cd') };
 const myStrainBar = document.querySelector('#myStrain i'), myStrainTxt = document.querySelector('#myStrain b');
-document.getElementById('pause').addEventListener('pointerdown', () => { if (paused && !anyModal()) { paused = false; document.getElementById('pause').classList.add('hidden'); } });
+// ---- career + XP levels (saved in this browser) ----
+const CAREER0 = { matches: 0, wins: 0, losses: 0, kos: 0, hits: 0, outs: 0, streak: 0, bestStreak: 0, xp: 0, ultimates: 0 };
+const career = { ...CAREER0 };
+try { Object.assign(career, JSON.parse(localStorage.getItem('aoe-career')) || {}); } catch (e) {}
+function saveCareer() { try { localStorage.setItem('aoe-career', JSON.stringify(career)); } catch (e) {} }
+function levelInfo(xp) { let lvl = 1, need = 200, rem = xp; while (rem >= need) { rem -= need; lvl++; need = 200 + (lvl - 1) * 75; } return { lvl, into: rem, need }; }
+function renderCareerChip() { document.getElementById('carLv').textContent = `Lv ${levelInfo(career.xp).lvl}`; }
+function recordMatch(won) {
+  if (!human || !human.human) return null; // only real player matches count
+  const s = human.stats, mult = { easy: 0.75, normal: 1, hard: 1.5 }[difficulty];
+  const xp = Math.round((50 + (won ? 100 : 0) + s.kos * 25 + s.hits * 2) * mult);
+  const before = levelInfo(career.xp).lvl;
+  career.matches++; if (won) career.wins++; else career.losses++;
+  career.kos += s.kos; career.hits += s.hits; career.outs += s.outs;
+  career.streak = won ? career.streak + 1 : 0; career.bestStreak = Math.max(career.bestStreak, career.streak);
+  career.xp += xp; saveCareer(); renderCareerChip();
+  return { xp, before, after: levelInfo(career.xp).lvl };
+}
+const carEl = document.getElementById('career');
+function renderCareer() {
+  const L = levelInfo(career.xp);
+  document.getElementById('cLv').textContent = `Level ${L.lvl}`;
+  document.getElementById('cXpBar').style.width = `${(L.into / L.need) * 100}%`;
+  document.getElementById('cXpTxt').textContent = `${L.into} / ${L.need} XP`;
+  const rate = career.matches ? Math.round((career.wins / career.matches) * 100) + '%' : '—';
+  const items = [['Matches', career.matches], ['Wins', career.wins], ['Win rate', rate], ['Knock-outs', career.kos],
+    ['Hits', career.hits], ['Ultimates', career.ultimates], ['Win streak', career.streak], ['Best streak', career.bestStreak]];
+  document.getElementById('cGrid').innerHTML = items.map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
+}
+document.getElementById('carBtn').addEventListener('click', () => { renderCareer(); openModal(carEl); });
+document.getElementById('cClose').addEventListener('click', () => closeModal(carEl));
+document.getElementById('cReset').addEventListener('click', () => {
+  if (confirm('Reset your career stats and level? This cannot be undone.')) { Object.assign(career, CAREER0); saveCareer(); renderCareer(); renderCareerChip(); }
+});
+carEl.addEventListener('pointerdown', (e) => { if (e.target === carEl) closeModal(carEl); });
+renderCareerChip();
+
+// ---- installable app + offline play (only on the real https site, not while developing locally) ----
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+let installPrompt = null;
+const installBtn = document.getElementById('installBtn');
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; installBtn.hidden = false; });
+installBtn.addEventListener('click', async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  try { await installPrompt.userChoice; } catch (e) {}
+  installPrompt = null; installBtn.hidden = true;
+});
+addEventListener('appinstalled', () => { installBtn.hidden = true; toast('Installed! Find Arena of Elements with your apps.'); });
+
+// ---- pause menu ----
+function setPaused(v) {
+  paused = v; document.getElementById('pause').classList.toggle('hidden', !v);
+  mouseDown = false; for (const k in keys) keys[k] = false; touch.atk = false;
+}
+function quitToMenu() {
+  setPaused(false); clearMatch(); state = 'menu';
+  for (const id of ['hud', 'end', 'spectate']) document.getElementById(id).classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  previewEl = chosenEl; rebuildPreview();
+}
+document.getElementById('pResume').addEventListener('click', () => setPaused(false));
+document.getElementById('pRestart').addEventListener('click', () => { setPaused(false); startMatch(chosenEl); });
+document.getElementById('pSettings').addEventListener('click', () => { renderSettings(); openModal(setEl); });
+document.getElementById('pQuit').addEventListener('click', quitToMenu);
 const projV = v3();
 function updateHUD() {
   timerEl.textContent = Math.ceil(Math.max(0, timer));
@@ -2053,6 +2209,7 @@ addEventListener('resize', () => {
   applyQuality();
 });
 updateTiles(); renderPips(); applyQuality(); drawJumbo();
+applyTheme(arenaChoice === 'random' ? 'night' : arenaChoice);
 frame();
 loadLooks((d, n) => { document.getElementById('loading').textContent = `Loading fighters… ${d}/${n}`; }).then(() => {
   state = 'menu'; looksReady = true;
