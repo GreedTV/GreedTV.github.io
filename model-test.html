@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Model test</title>
+<style>html,body{margin:0;height:100%;background:#20263a;overflow:hidden}</style></head>
+<body>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { loadLooks, makeCharacter, CLIPS, CLIP_NAMES } from './looks.js';
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+r.toneMapping = THREE.ACESFilmicToneMapping;
+const s = new THREE.Scene(); s.background = new THREE.Color(0x20263a);
+const cam = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 100); cam.position.set(0, 1.3, 7.5); cam.lookAt(0, 1.05, 0);
+if (new URLSearchParams(location.search).get('cam') === 'head') { cam.position.set(0, 2.6, 3.2); cam.lookAt(0, 1.95, 0); }
+s.add(new THREE.HemisphereLight(0xffffff, 0x334, 1.3)); const d = new THREE.DirectionalLight(0xffffff, 2.5); d.position.set(2, 4, 3); s.add(d);
+await loadLooks();
+const mixers = [], params = new URLSearchParams(location.search), clip = CLIP_NAMES[params.get('clip') || 'idle'];
+['fire', 'water', 'earth', 'air'].forEach((el, i) => {
+  const outfit = params.get('outfit') || ['suit', 'jersey', 'track', 'gear'][i];
+  const { model } = makeCharacter({ el, team: i % 2 ? 0xe83a4f : 0x2f6bff, body: params.get('body') || (i % 2 ? 'female' : 'male'), hair: params.has('hair') ? +params.get('hair') : i, hairColor: i * 2, outfit });
+  model.position.x = (i - 1.5) * 1.3; if (params.get('back')) model.rotation.y = Math.PI; s.add(model);
+  const mx = new THREE.AnimationMixer(model); mx.clipAction(THREE.AnimationClip.findByName(CLIPS, clip)).play(); mixers.push(mx);
+});
+const c = new THREE.Clock();
+(function loop() { requestAnimationFrame(loop); const dt = c.getDelta(); mixers.forEach(m => m.update(dt)); r.render(s, cam); })();
+window.ready = true;
+window.clipInfo = Object.fromEntries(Object.entries(CLIP_NAMES).map(([k, n]) => [k, +(THREE.AnimationClip.findByName(CLIPS, n)?.duration ?? -1).toFixed(2)]));
+</script></body></html>
