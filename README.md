@@ -6,6 +6,10 @@ Pick an element — **Fire, Water, Earth or Air** — and fight alongside two co
 Hit the other team to push them back across the zone lines. Knock everyone off the back edge
 into the water, or hold more ground when time runs out. Win 2 rounds to win the match.
 
+Works on PC and on phones/tablets (on-screen joystick and buttons, attacks auto-aim at the nearest enemy).
+Choose **Easy / Normal / Hard** on the menu, customise your fighter (body, outfit, hair), and use
+**⚙️ Settings** for volume, announcer voice, graphics level and a frame-rate counter.
+
 ## Controls
 
 | Key | Action |

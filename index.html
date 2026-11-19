@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Arena of Elements</title>
+<meta name="description" content="3v3 elemental arena game in your browser. Pick Fire, Water, Earth or Air, push the other team back across the zones and knock them into the water.">
+<meta name="theme-color" content="#070b18">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Arena of Elements">
+<meta property="og:description" content="3v3 elemental arena game — free to play in your browser, on PC or phone.">
+<meta property="og:url" content="https://greedtv.github.io/">
+<meta property="og:image" content="https://greedtv.github.io/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='20' r='14' fill='%23ff7a2f'/%3E%3Ccircle cx='44' cy='20' r='14' fill='%234fc0ff'/%3E%3Ccircle cx='20' cy='44' r='14' fill='%23c49a6c'/%3E%3Ccircle cx='44' cy='44' r='14' fill='%23e8f6ff'/%3E%3C/svg%3E">
 <style>
   :root {
     --blue: #4f86ff; --red: #ff5a6e; --gold: #ffd54a;
@@ -72,9 +81,53 @@
   .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   kbd { background: #222b4a; border-radius: 4px; padding: 1px 6px; font-family: inherit; color: var(--text); }
   #credit { position: fixed; bottom: 8px; right: 12px; font-size: 11px; color: #5d6890; }
-  #fbBtn { position: fixed; top: 14px; right: 14px; z-index: 20; background: var(--panel); color: var(--text); border: 2px solid rgba(255,255,255,.18);
+  #topBtns { position: fixed; top: 14px; right: 14px; z-index: 20; display: flex; gap: 8px; }
+  #topBtns[hidden] { display: none; }
+  @media (max-width: 640px) {
+    #topBtns { top: 8px; right: 8px; gap: 6px; } .tb { padding: 6px 10px; font-size: 13px; }
+    #top { gap: 6px; } .team { padding: 5px 8px; font-size: 11px; } .team .tname { display: none; }
+    #center { padding: 4px 12px; } #timer { font-size: 24px; }
+    #terr { width: 70vw; top: 62px; }
+    #myStrain .bar { width: 80px; }
+  }
+  .tb { background: var(--panel); color: var(--text); border: 2px solid rgba(255,255,255,.18);
     border-radius: 10px; padding: 8px 14px; font: 700 14px "Segoe UI", system-ui, sans-serif; cursor: pointer; }
-  #fbBtn:hover { border-color: var(--gold); color: var(--gold); }
+  .tb:hover { border-color: var(--gold); color: var(--gold); }
+  #fps { position: fixed; top: 8px; left: 10px; z-index: 20; font: 700 12px ui-monospace, Consolas, monospace; color: #8f9cc0; background: var(--panel); padding: 3px 8px; border-radius: 6px; pointer-events: none; }
+  /* generic modal (how to play, settings) */
+  .modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(4,6,14,.7); padding: 16px; }
+  .modal .box { width: min(480px, 100%); max-height: 100%; overflow-y: auto; background: #0e1430; border: 2px solid rgba(255,255,255,.12); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .modal h2 { margin: 0; font-size: 22px; letter-spacing: 1px; }
+  .modal label { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .modal .check { font-size: 14px; color: var(--text); display: flex; gap: 8px; align-items: center; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .modal .types { display: flex; gap: 6px; flex-wrap: wrap; }
+  .modal .types button { background: #1d2a55; color: var(--text); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; padding: 6px 14px; font: 700 13px "Segoe UI", system-ui, sans-serif; cursor: pointer; }
+  .modal .types button.on { border-color: var(--gold); color: var(--gold); }
+  .modal .actions { display: flex; justify-content: flex-end; }
+  .modal input[type=range] { width: 100%; accent-color: var(--gold); }
+  .how { margin: 0; padding-left: 20px; line-height: 1.55; font-size: 14px; color: #d6dcf0; }
+  .how li { margin-bottom: 6px; } .how b { color: var(--gold); }
+  .howkeys { font-size: 13px; color: var(--muted); line-height: 1.9; background: #070b18; border-radius: 8px; padding: 10px 12px; }
+  /* own strain meter */
+  #myStrain { position: absolute; bottom: 96px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; background: var(--panel); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--muted); }
+  #myStrain .bar { width: 120px; height: 8px; background: rgba(0,0,0,.6); border-radius: 4px; overflow: hidden; }
+  #myStrain .bar i { display: block; height: 100%; width: 0; background: var(--gold); }
+  #myStrain b { min-width: 34px; color: var(--text); font-variant-numeric: tabular-nums; }
+  /* touch controls */
+  #touch { position: fixed; inset: 0; z-index: 15; pointer-events: none; }
+  #touch > * { pointer-events: auto; touch-action: none; -webkit-user-select: none; user-select: none; }
+  #stick { position: absolute; left: 22px; bottom: 26px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.25); }
+  #knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(255,255,255,.35); border: 2px solid rgba(255,255,255,.6); }
+  .tbtn { position: absolute; overflow: hidden; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(20,30,60,.65); color: #fff; font: 800 12px "Segoe UI", system-ui, sans-serif; letter-spacing: 1px; width: 74px; height: 74px; }
+  .tbtn .cd { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(0,0,0,.6); pointer-events: none; }
+  .tbtn.big { width: 104px; height: 104px; right: 22px; bottom: 30px; font-size: 14px; border-color: var(--gold); }
+  #tSpc { right: 136px; bottom: 26px; } #tDdg { right: 40px; bottom: 146px; }
+  .tbtn.small { width: 48px; height: 48px; left: 12px; top: 12px; font-size: 18px; }
+  .tbtn:active { background: rgba(255,213,74,.35); }
+  body.touchmode #help, body.touchmode #abilities, body.touchmode .kbHint, body:not(.touchmode) .touchHint { display: none; }
+  #myStrain { white-space: nowrap; }
+  body.touchmode #myStrain { bottom: auto; top: 96px; }
+  body.touchmode #toasts { top: 138px; }
   #fb { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(4,6,14,.7); padding: 16px; }
   #fb .box { width: min(460px, 100%); background: #0e1430; border: 2px solid rgba(255,255,255,.12); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
   #fb h2 { margin: 0; font-size: 22px; letter-spacing: 1px; }
@@ -135,6 +188,7 @@
     <div class="team red"><span id="winsR" class="pips"></span><span class="tname">RED</span></div>
   </div>
   <div id="terr"></div>
+  <div id="myStrain"><span>Your strain</span><div class="bar"><i></i></div><b>0%</b></div>
   <div id="abilities">
     <div class="ab" id="abP"><div class="fill"></div><b>Attack</b><small>Left click</small></div>
     <div class="ab" id="abS"><div class="fill"></div><b id="abSName">Special</b><small>Right click / E</small></div>
@@ -155,13 +209,15 @@
   <div class="menuBottom">
     <div id="loading">Loading fighters…</div>
     <div id="picker" class="hidden">
+      <div class="pk"><span>Difficulty</span><button data-diff="easy">Easy</button><button data-diff="normal">Normal</button><button data-diff="hard">Hard</button></div>
       <div class="pk"><span>Body</span><button data-body="male">Male</button><button data-body="female">Female</button></div>
       <div class="pk"><span>Outfit</span><button id="outPrev" aria-label="Previous outfit">◀</button><b id="outName"></b><button id="outNext" aria-label="Next outfit">▶</button></div>
       <div class="pk"><span>Hair</span><button id="hairPrev" aria-label="Previous hairstyle">◀</button><b id="hairName"></b><button id="hairNext" aria-label="Next hairstyle">▶</button></div>
       <div class="pk"><span>Color</span><div id="swatches"></div></div>
     </div>
     <div class="cards loading" id="cards"></div>
-    <p style="font-size:13px">Hover an element to preview it, click to fight · <kbd>WASD</kbd> move · <kbd>Mouse</kbd> aim · <kbd>Left click</kbd> attack · <kbd>Right click</kbd>/<kbd>E</kbd> special · <kbd>Space</kbd> dodge</p>
+    <p style="font-size:13px" class="kbHint">Hover an element to preview it, click to fight · <kbd>WASD</kbd> move · <kbd>Mouse</kbd> aim · <kbd>Left click</kbd> attack · <kbd>Right click</kbd>/<kbd>E</kbd> special · <kbd>Space</kbd> dodge</p>
+    <p style="font-size:13px" class="touchHint">Tap an element to fight · left stick moves, buttons attack (auto-aim), special and dodge</p>
   </div>
 </div>
 
@@ -174,9 +230,50 @@
   </div>
 </div>
 
-<div id="pause" class="overlay hidden"><h1>PAUSED</h1><p>Press <kbd>P</kbd> to continue · 💬 Feedback button is at the top right</p></div>
+<div id="pause" class="overlay hidden"><h1>PAUSED</h1><p>Press <kbd>P</kbd> or tap anywhere to continue</p></div>
 <div id="credit">Characters &amp; animations: Quaternius (CC0)</div>
-<button id="fbBtn" type="button">💬 Feedback</button>
+<div id="topBtns">
+  <button id="howBtn" class="tb" type="button">❓ How to play</button>
+  <button id="setBtn" class="tb" type="button" aria-label="Settings">⚙️</button>
+  <button id="fbBtn" class="tb" type="button">💬 Feedback</button>
+</div>
+<div id="fps" class="hidden"></div>
+
+<div id="howto" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="howTitle">
+  <div class="box">
+    <h2 id="howTitle">How to play</h2>
+    <ol class="how">
+      <li><b>3 vs 3.</b> You and 2 teammates (blue) against the red team.</li>
+      <li><b>Hit to push.</b> Every hit knocks the target back and fills their <b>strain</b> bar. The fuller it is, the further they fly.</li>
+      <li><b>Take zones.</b> Knock all three enemies back across a line and your team takes that zone. Anyone knocked over a line can't walk back past it.</li>
+      <li><b>Ring out.</b> Push someone off the back edge into the water and they're out for the round.</li>
+      <li><b>Win.</b> Knock out the whole team, or hold more ground when time runs out. First to 2 rounds wins.</li>
+    </ol>
+    <div class="howkeys" id="howKeys"></div>
+    <div class="actions"><button type="button" class="btn" id="howClose">Got it</button></div>
+  </div>
+</div>
+
+<div id="settings" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="box">
+    <h2 id="setTitle">Settings</h2>
+    <label for="vol">Volume <span id="volVal"></span></label>
+    <input type="range" id="vol" min="0" max="100" step="5">
+    <label class="check"><input type="checkbox" id="voiceOn"> Announcer voice</label>
+    <label>Graphics</label>
+    <div class="types" id="gfx"><button type="button" data-q="0">Low</button><button type="button" data-q="1">Medium</button><button type="button" data-q="2">High</button></div>
+    <label class="check"><input type="checkbox" id="fpsOn"> Show frame rate</label>
+    <div class="actions"><button type="button" class="btn" id="setClose">Done</button></div>
+  </div>
+</div>
+
+<div id="touch" class="hidden">
+  <div id="stick"><div id="knob"></div></div>
+  <button type="button" id="tAtk" class="tbtn big">ATTACK<i class="cd"></i></button>
+  <button type="button" id="tSpc" class="tbtn">SPECIAL<i class="cd"></i></button>
+  <button type="button" id="tDdg" class="tbtn">DODGE<i class="cd"></i></button>
+  <button type="button" id="tPause" class="tbtn small" aria-label="Pause">⏸</button>
+</div>
 <div id="fb" class="hidden" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
   <div class="box">
     <h2 id="fbTitle">Send feedback</h2>
@@ -700,7 +797,7 @@ let actx = null, master = null, noiseBuf = null, crowdGain = null, cheerGain = n
 function initAudio() {
   if (actx) return;
   try {
-    actx = new AudioContext(); master = actx.createGain(); master.gain.value = 0.5; master.connect(actx.destination);
+    actx = new AudioContext(); master = actx.createGain(); master.gain.value = masterLevel(); master.connect(actx.destination);
     noiseBuf = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     // crowd bed: looping brown noise, band-passed like a distant murmur, plus a brighter "cheer" layer
@@ -773,10 +870,16 @@ function sfx(type, el, loud = true) {
   }
 }
 function say(text) {
-  if (muted || !('speechSynthesis' in window)) return;
+  if (muted || !settings.voice || settings.vol === 0 || !('speechSynthesis' in window)) return;
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1.05; u.pitch = 0.75; u.volume = 0.9; speechSynthesis.speak(u); } catch (e) {}
 }
-function toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : 0.5; if (muted && 'speechSynthesis' in window) speechSynthesis.cancel(); toast(muted ? 'Sound off' : 'Sound on'); }
+// ---- player settings (saved in this browser) ----
+const settings = { vol: 80, voice: true, fps: false };
+try { Object.assign(settings, JSON.parse(localStorage.getItem('aoe-settings')) || {}); } catch (e) {}
+function saveSettings() { try { localStorage.setItem('aoe-settings', JSON.stringify(settings)); } catch (e) {} }
+function masterLevel() { return muted ? 0 : (settings.vol / 100) * 0.6; }
+function applyVolume() { if (master) master.gain.value = masterLevel(); }
+function toggleMute() { muted = !muted; applyVolume(); if (muted && 'speechSynthesis' in window) speechSynthesis.cancel(); toast(muted ? 'Sound off' : 'Sound on'); }
 
 // ================= FIGHTERS =================
 function makeFighterMesh(teamIdx, elKey, look) {
@@ -838,7 +941,7 @@ function makeFighter(team, el, slot, isHuman, look) {
     pos: v3(), mv: v3(), kb: v3(), want: v3(), facing: v3(-TEAM[team].side, 0, 0), dodgeDir: v3(),
     vy: 0, strain: 0, line: 0, out: false, falling: false, cd: { p: 0, s: 0, d: 0 },
     dodgeT: 0, stunT: 0, flashT: 0, punchIdx: 0, auraT: Math.random() * 0.2,
-    ai: { think: 0, target: null, strafe: 0, depthOff: 2, fireDelay: 0.5, skill: 0.55 + Math.random() * 0.35, dodge: 0.3 },
+    ai: { think: 0, target: null, strafe: 0, depthOff: 2, fireDelay: 0.5, skill: 0.55 + Math.random() * 0.35, dodge: 0.3, aggr: 1 },
   };
 }
 const active = (f) => !f.out && !f.falling;
@@ -854,6 +957,14 @@ try {
   const s = JSON.parse(localStorage.getItem('aoe-look'));
   if (s && HAIR_STYLES[s.body]) playerLook = { body: s.body, hair: +s.hair || 0, hairColor: +s.hairColor || 0, outfit: OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'suit' };
 } catch (e) {}
+// difficulty of the red team: aim skill, chance to dodge, and attack pace (lower aggr = attacks more often)
+const DIFFS = {
+  easy:   { name: 'Easy',   skill: [0.3, 0.5],   dodge: 0.1,  aggr: 1.7 },
+  normal: { name: 'Normal', skill: [0.55, 0.9],  dodge: 0.3,  aggr: 1 },
+  hard:   { name: 'Hard',   skill: [0.85, 1.05], dodge: 0.55, aggr: 0.65 },
+};
+let difficulty = 'normal';
+try { const d = localStorage.getItem('aoe-diff'); if (DIFFS[d]) difficulty = d; } catch (e) {}
 const lookKey = (l) => l.body + l.hair + '-' + l.hairColor + '-' + l.outfit;
 let preview = null, previewEl = 'fire', looksReady = false, previewMoveT = 2;
 const menuLight = new THREE.PointLight(0xfff2e0, 40, 0, 2); menuLight.position.set(2.5, 3.2, 4); menuLight.visible = false; scene.add(menuLight);
@@ -866,6 +977,7 @@ function rebuildPreview() {
 }
 function renderPicker() {
   document.querySelectorAll('[data-body]').forEach(b => b.classList.toggle('on', b.dataset.body === playerLook.body));
+  document.querySelectorAll('[data-diff]').forEach(b => b.classList.toggle('on', b.dataset.diff === difficulty));
   const st = HAIR_STYLES[playerLook.body];
   playerLook.hair = ((playerLook.hair % st.length) + st.length) % st.length;
   document.getElementById('hairName').textContent = st[playerLook.hair].name;
@@ -875,6 +987,9 @@ function renderPicker() {
 }
 function lookChanged() { try { localStorage.setItem('aoe-look', JSON.stringify(playerLook)); } catch (e) {} renderPicker(); rebuildPreview(); }
 document.querySelectorAll('[data-body]').forEach(b => b.addEventListener('click', () => { if (playerLook.body !== b.dataset.body) { playerLook.body = b.dataset.body; playerLook.hair = 0; lookChanged(); } }));
+document.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => {
+  difficulty = b.dataset.diff; try { localStorage.setItem('aoe-diff', difficulty); } catch (e) {} renderPicker();
+}));
 document.getElementById('hairPrev').addEventListener('click', () => { playerLook.hair--; lookChanged(); });
 document.getElementById('hairNext').addEventListener('click', () => { playerLook.hair++; lookChanged(); });
 function stepOutfit(d) { const i = OUTFITS.findIndex(o => o.id === playerLook.outfit); playerLook.outfit = OUTFITS[(i + d + OUTFITS.length) % OUTFITS.length].id; lookChanged(); }
@@ -903,6 +1018,10 @@ function startMatch(el) {
   fighters.push(makeFighter(0, blue[0], 1, true, playerLook),
     makeFighter(0, blue[1], 0, false, randomLook(blue[1], 0, used)), makeFighter(0, blue[2], 2, false, randomLook(blue[2], 0, used)));
   red.forEach((e, i) => fighters.push(makeFighter(1, e, i, false, randomLook(e, 1, used))));
+  const D = DIFFS[difficulty];
+  for (const f of fighters) if (f.team === 1) {
+    f.ai.skill = D.skill[0] + Math.random() * (D.skill[1] - D.skill[0]); f.ai.dodge = D.dodge; f.ai.aggr = D.aggr;
+  }
   human = fighters[0];
   wins = [0, 0]; round = 1;
   document.getElementById('menu').classList.add('hidden');
@@ -1171,9 +1290,87 @@ document.getElementById('fbCopy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(text); fbMsg.textContent = 'Copied! Paste it anywhere to send it.'; }
   catch (e) { fbText.select(); fbMsg.textContent = 'Could not copy automatically — select the text and copy it yourself.'; }
 });
-function updateFeedbackButton() {
-  const show = !fbOpen && (['menu', 'over', 'loading'].includes(state) || paused);
-  if (fbBtn.hidden === show) fbBtn.hidden = !show;
+// ---- How to play + Settings panels ----
+const howEl = document.getElementById('howto'), setEl = document.getElementById('settings'), topBtns = document.getElementById('topBtns');
+let modalPausedByUs = false;
+const anyModal = () => fbOpen || !howEl.classList.contains('hidden') || !setEl.classList.contains('hidden');
+function openModal(el) {
+  mouseDown = false; for (const k in keys) keys[k] = false;
+  if (['play', 'countdown', 'intro', 'roundEnd'].includes(state) && !paused) { paused = true; modalPausedByUs = true; }
+  el.classList.remove('hidden');
+}
+function closeModal(el) {
+  el.classList.add('hidden');
+  if (modalPausedByUs && !anyModal()) { paused = false; modalPausedByUs = false; }
+}
+function renderHowKeys() {
+  document.getElementById('howKeys').innerHTML = touchMode
+    ? '<b>Left stick</b> move · <b>ATTACK</b> (hold) fires at the nearest enemy · <b>SPECIAL</b> element power · <b>DODGE</b> quick roll · <b>⏸</b> pause'
+    : '<b>WASD</b> move · <b>Mouse</b> aim · <b>Hold left click</b> attack · <b>Right click / E</b> special · <b>Space</b> dodge · <b>P</b> pause · <b>M</b> mute · <b>G</b> graphics';
+}
+function openHow() { renderHowKeys(); openModal(howEl); }
+document.getElementById('howBtn').addEventListener('click', openHow);
+document.getElementById('howClose').addEventListener('click', () => { closeModal(howEl); try { localStorage.setItem('aoe-howto-seen', '1'); } catch (e) {} });
+const volEl = document.getElementById('vol'), volVal = document.getElementById('volVal');
+function renderSettings() {
+  volEl.value = settings.vol; volVal.textContent = settings.vol + '%';
+  document.getElementById('voiceOn').checked = settings.voice;
+  document.getElementById('fpsOn').checked = settings.fps;
+  document.querySelectorAll('#gfx button').forEach(b => b.classList.toggle('on', +b.dataset.q === qIdx));
+}
+document.getElementById('setBtn').addEventListener('click', () => { renderSettings(); openModal(setEl); });
+document.getElementById('setClose').addEventListener('click', () => closeModal(setEl));
+volEl.addEventListener('input', () => { settings.vol = +volEl.value; volVal.textContent = settings.vol + '%'; applyVolume(); saveSettings(); });
+document.getElementById('voiceOn').addEventListener('change', (e) => { settings.voice = e.target.checked; saveSettings(); if (!settings.voice && 'speechSynthesis' in window) speechSynthesis.cancel(); });
+document.getElementById('fpsOn').addEventListener('change', (e) => { settings.fps = e.target.checked; saveSettings(); });
+document.getElementById('gfx').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { qIdx = +b.dataset.q; applyQuality(); renderSettings(); } });
+[howEl, setEl].forEach(el => el.addEventListener('pointerdown', (e) => { if (e.target === el) closeModal(el); }));
+
+// ---- touch controls (phones / tablets): stick to move, buttons to act, auto-aim at the nearest enemy ----
+let touchMode = matchMedia('(pointer: coarse)').matches;
+const touch = { x: 0, y: 0, atk: false };
+const stickEl = document.getElementById('stick'), knobEl = document.getElementById('knob'), touchEl = document.getElementById('touch');
+function stickMove(e) {
+  const r = stickEl.getBoundingClientRect(), R = r.width / 2;
+  let dx = e.clientX - (r.left + R), dy = e.clientY - (r.top + R);
+  const d = Math.hypot(dx, dy), max = R * 0.75;
+  if (d > max) { dx *= max / d; dy *= max / d; }
+  knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
+  const k = Math.min(1, d / max) > 0.15 ? 1 / max : 0;
+  touch.x = dx * k; touch.y = -dy * k;
+}
+function stickEnd() { touch.x = touch.y = 0; knobEl.style.transform = ''; }
+let stickId = null;
+stickEl.addEventListener('pointerdown', (e) => {
+  touchMode = true; initAudio(); stickId = e.pointerId;
+  try { stickEl.setPointerCapture(e.pointerId); } catch (err) {}
+  stickMove(e); e.preventDefault();
+});
+addEventListener('pointermove', (e) => { if (e.pointerId === stickId) stickMove(e); });
+for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, (e) => { if (e.pointerId === stickId) { stickId = null; stickEnd(); } });
+const tAtk = document.getElementById('tAtk');
+let atkId = null;
+tAtk.addEventListener('pointerdown', (e) => { touchMode = true; initAudio(); touch.atk = true; atkId = e.pointerId; try { tAtk.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); });
+for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, (e) => { if (e.pointerId === atkId) { atkId = null; touch.atk = false; } });
+document.getElementById('tSpc').addEventListener('pointerdown', (e) => { initAudio(); specialQ = true; e.preventDefault(); });
+document.getElementById('tDdg').addEventListener('pointerdown', (e) => { initAudio(); dodgeQ = true; e.preventDefault(); });
+document.getElementById('tPause').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (['play', 'countdown', 'intro', 'roundEnd'].includes(state)) { paused = !paused; document.getElementById('pause').classList.toggle('hidden', !paused); }
+});
+const nearestEnemy = (f) => { let best = null, bd = Infinity; for (const e of fighters) { if (e.team === f.team || !active(e)) continue; const d = e.pos.distanceToSquared(f.pos); if (d < bd) { bd = d; best = e; } } return best; };
+
+let fpsT = 0, fpsFrames = 0;
+const fpsEl = document.getElementById('fps');
+function updateTopUI(raw) {
+  const inMatch = ['play', 'countdown', 'intro', 'roundEnd'].includes(state);
+  const showTop = !anyModal() && (['menu', 'over', 'loading'].includes(state) || paused);
+  if (topBtns.hidden === showTop) topBtns.hidden = !showTop;
+  const showTouch = touchMode && inMatch && !paused && !anyModal();
+  touchEl.classList.toggle('hidden', !showTouch);
+  document.body.classList.toggle('touchmode', touchMode);
+  fpsEl.classList.toggle('hidden', !settings.fps);
+  if (settings.fps) { fpsFrames++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = `${Math.round(fpsFrames / fpsT)} FPS · ${QUALITY[qIdx].name}`; fpsT = 0; fpsFrames = 0; } }
 }
 
 // ================= CONTROL =================
@@ -1181,23 +1378,40 @@ const keys = {}; let mouseDown = false, specialQ = false, dodgeQ = false;
 const mouse = new THREE.Vector2(), ray = new THREE.Raycaster(), aimPlane = new THREE.Plane(v3(0, 1, 0), -1.35), aimPt = v3();
 addEventListener('keydown', (e) => {
   if (fbOpen) { if (e.code === 'Escape') closeFeedback(); return; }
+  if (anyModal()) { if (e.code === 'Escape') { closeModal(howEl); closeModal(setEl); } return; }
   if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if (/^Key[WASD]$/.test(e.code) && touchMode) { touchMode = false; }
   keys[e.code] = true;
   if (e.code === 'KeyE') specialQ = true;
   if (e.code === 'Space') { dodgeQ = true; e.preventDefault(); if (state === 'intro') skipIntro = true; }
   if (e.code === 'KeyM') toggleMute();
   if (e.code === 'KeyG') { qIdx = (qIdx + 1) % QUALITY.length; applyQuality(true); }
-  if (e.code === 'KeyP' && !['menu', 'over', 'loading'].includes(state)) { paused = !paused; document.getElementById('pause').classList.toggle('hidden', !paused); }
+  if (e.code === 'KeyP' && !['menu', 'over', 'loading'].includes(state) && !anyModal()) { paused = !paused; document.getElementById('pause').classList.toggle('hidden', !paused); }
 });
 addEventListener('keyup', (e) => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; });
 addEventListener('pointermove', (e) => { mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); });
-addEventListener('pointerdown', (e) => { if (fbOpen || e.target.closest('#fbBtn')) return; initAudio(); if (state === 'intro') skipIntro = true; if (e.button === 0) mouseDown = true; if (e.button === 2) specialQ = true; });
+addEventListener('pointerdown', (e) => {
+  if (anyModal() || e.target.closest('#topBtns, #touch, .modal, #fb')) return;
+  if (e.pointerType === 'touch') { touchMode = true; initAudio(); if (state === 'intro') skipIntro = true; return; }
+  if (e.pointerType === 'mouse' && touchMode && state !== 'menu') touchMode = false;
+  initAudio(); if (state === 'intro') skipIntro = true; if (e.button === 0) mouseDown = true; if (e.button === 2) specialQ = true; });
 addEventListener('pointerup', (e) => { if (e.button === 0) mouseDown = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
 
 function controlHuman(f) {
   const fwd = -f.side;
+  if (touchMode) {
+    f.want.set(fwd * touch.y, 0, touch.x); if (f.want.lengthSq() > 1) f.want.normalize();
+    const t = nearestEnemy(f), dir = v3(-f.side, 0, 0);
+    if (t) { const d = t.pos.clone().addScaledVector(t.mv, t.pos.distanceTo(f.pos) / ELEMENTS[f.el].primary.speed * 0.6).sub(f.pos); d.y = 0; if (d.lengthSq() > 0.01) dir.copy(d.normalize()); }
+    f.facing.copy(dir);
+    if (touch.atk) attack(f, dir);
+    if (specialQ) doSpecial(f, dir);
+    if (dodgeQ) dodge(f, f.want.lengthSq() > 0.01 ? f.want : v3(0, 0, f.pos.z > 0 ? -1 : 1));
+    specialQ = dodgeQ = false;
+    return;
+  }
   const ws = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), ad = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
   f.want.set(fwd * ws, 0, ad); if (f.want.lengthSq() > 1) f.want.normalize();
   ray.setFromCamera(mouse, camera);
@@ -1236,13 +1450,13 @@ function controlAI(f, dt) {
   const dir = lead.sub(f.pos).setY(0).normalize();
   f.facing.copy(dir);
   ai.fireDelay -= dt;
-  if (f.cd.p <= 0 && ai.fireDelay <= 0) { attack(f, dir); ai.fireDelay = 0.15 + Math.random() * 0.55; }
+  if (f.cd.p <= 0 && ai.fireDelay <= 0) { attack(f, dir); ai.fireDelay = (0.15 + Math.random() * 0.55) * ai.aggr; }
   if (f.cd.s <= 0) {
     const k = f.el;
     let incoming = false;
     for (const p of projectiles) if (p.team !== f.team && p.pos.distanceTo(f.pos) < 8) { incoming = true; break; }
     const chance = k === 'air' ? (dist < 8 ? 1.2 : 0) : k === 'earth' ? (incoming ? 0.9 : 0.08) : k === 'fire' ? (dist < 18 ? 0.45 : 0) : 0.35;
-    if (Math.random() < chance * dt) doSpecial(f, dir);
+    if (Math.random() < chance * dt / ai.aggr) doSpecial(f, dir);
   }
   if (f.cd.d <= 0) {
     for (const p of projectiles) {
@@ -1394,7 +1608,7 @@ function showEnd() {
   roundWinner = won ? 0 : 1;
   for (const f of fighters) { if (!f.out) continue; f.out = false; f.falling = false; f.pos.set(f.side * 3, 0, (f.slot - 1) * 4.5); f.mesh.root.visible = true; f.mesh.root.rotation.set(0, 0, 0); }
   document.getElementById('endTitle').textContent = won ? 'VICTORY' : 'DEFEAT';
-  document.getElementById('endSub').textContent = `Blue ${wins[0]} – ${wins[1]} Red`;
+  document.getElementById('endSub').textContent = `Blue ${wins[0]} – ${wins[1]} Red · ${DIFFS[difficulty].name}`;
   document.getElementById('end').classList.remove('hidden');
   document.getElementById('hud').classList.add('hidden');
   for (const f of fighters) f.label.style.display = 'none';
@@ -1432,6 +1646,9 @@ document.querySelectorAll('.card').forEach(c => {
 });
 const abEls = { p: document.getElementById('abP'), s: document.getElementById('abS'), d: document.getElementById('abD') };
 const timerEl = document.getElementById('timer');
+const touchCd = { p: document.querySelector('#tAtk .cd'), s: document.querySelector('#tSpc .cd'), d: document.querySelector('#tDdg .cd') };
+const myStrainBar = document.querySelector('#myStrain i'), myStrainTxt = document.querySelector('#myStrain b');
+document.getElementById('pause').addEventListener('pointerdown', () => { if (paused && !anyModal()) { paused = false; document.getElementById('pause').classList.add('hidden'); } });
 const projV = v3();
 function updateHUD() {
   timerEl.textContent = Math.ceil(Math.max(0, timer));
@@ -1442,7 +1659,12 @@ function updateHUD() {
       const frac = human.cd[k] / maxes[k];
       abEls[k].querySelector('.fill').style.height = `${frac * 100}%`;
       abEls[k].classList.toggle('ready', frac <= 0);
+      touchCd[k].style.height = `${frac * 100}%`;
     }
+    const s = Math.min(1, human.strain / 160);
+    myStrainBar.style.width = `${s * 100}%`;
+    myStrainBar.style.background = s < 0.35 ? '#ffd54a' : s < 0.7 ? '#ff9a3d' : '#ff3b3b';
+    myStrainTxt.textContent = active(human) ? `${Math.round(s * 100)}%` : 'OUT';
   }
   for (const f of fighters) {
     if (f.out || state === 'over') continue;
@@ -1461,7 +1683,8 @@ function updateHUD() {
 const camTarget = v3(), camLook = v3(), lookNow = v3(0, 0, 0);
 const ease = (k) => k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
 function updateCamera(rdt) {
-  let k = 1 - Math.exp(-8 * rdt), fov = 55;
+  const portrait = camera.aspect < 0.9;
+  let k = 1 - Math.exp(-8 * rdt), fov = portrait ? 72 : 55;
   if (state === 'menu' && preview) {
     camTarget.set(Math.sin(realNow * 0.2) * 1.6, 1.7, 6.6); camLook.set(0, 0.85, 0); k = 1 - Math.exp(-3 * rdt);
   } else if (state === 'menu' || state === 'loading' || state === 'over') {
@@ -1472,12 +1695,13 @@ function updateCamera(rdt) {
     const R = THREE.MathUtils.lerp(30, 19, e), h = THREE.MathUtils.lerp(17, 9, e);
     camTarget.set(Math.cos(a) * R, h, Math.sin(a) * R); camLook.set(0, 1, 0); k = 1 - Math.exp(-8 * rdt);
   } else if (human && active(human)) {
-    camTarget.set(human.pos.x - 11.5, 9, human.pos.z * 0.55); camLook.set(human.pos.x + 9, 0.5, human.pos.z * 0.35);
+    if (portrait) { camTarget.set(human.pos.x - 13, 12, human.pos.z * 0.3); camLook.set(human.pos.x + 8, 0, human.pos.z * 0.2); }
+    else { camTarget.set(human.pos.x - 11.5, 9, human.pos.z * 0.55); camLook.set(human.pos.x + 9, 0.5, human.pos.z * 0.35); }
     if (state === 'countdown') k = 1 - Math.exp(-3 * rdt);
   } else {
     camTarget.set(-27, 17, 0); camLook.set(1, 0, 0);
   }
-  if (slow.t > 0 && slow.focus) { camTarget.copy(camera.position); camLook.copy(lookNow).lerp(slow.focus.pos, 0.5); fov = 40; }
+  if (slow.t > 0 && slow.focus) { camTarget.copy(camera.position); camLook.copy(lookNow).lerp(slow.focus.pos, 0.5); fov = portrait ? 55 : 40; }
   camera.position.lerp(camTarget, k); lookNow.lerp(camLook, k);
   if (shake > 0) { camera.position.add(rv(shake)); shake = Math.max(0, shake - rdt * 1.5); }
   camera.lookAt(lookNow);
@@ -1492,7 +1716,7 @@ function frame() {
   const raw = clock.getDelta();
   const rdt = Math.min(raw, 1 / 15); // don't turn low frame rates into slow motion
   if (!paused) advance(rdt);
-  updateFeedbackButton();
+  updateTopUI(raw);
   if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera);
   // auto quality: if the last ~2 seconds of a fight averaged under ~45 fps, step down one level
   if (state === 'play' && !paused && raw < 0.1 && document.visibilityState === 'visible') {
@@ -1574,6 +1798,8 @@ loadLooks((d, n) => { document.getElementById('loading').textContent = `Loading 
   document.getElementById('cards').classList.remove('loading');
   document.getElementById('picker').classList.remove('hidden');
   renderPicker(); rebuildPreview();
+  let seen = false; try { seen = !!localStorage.getItem('aoe-howto-seen'); } catch (e) {}
+  if (!seen) openHow();
 }).catch((e) => {
   console.error(e);
   document.getElementById('loading').textContent = 'Could not load the character models. Start the game through the local server (python -m http.server) rather than opening the file directly.';
@@ -1581,7 +1807,7 @@ loadLooks((d, n) => { document.getElementById('loading').textContent = `Loading 
 
 // test hook
 window.__game = { get state() { return state; }, get fighters() { return fighters; }, get F() { return F; }, get wins() { return wins; }, get round() { return round; }, startMatch,
-  step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) advance(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
+  step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) advance(1 / 60); updateTopUI(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
   prof: PROF };
 </script>
 </body>
