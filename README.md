@@ -19,12 +19,13 @@ Choose **Easy / Normal / Hard** on the menu, customise your fighter (body, outfi
 | Hold left click | Attack |
 | Right click / E | Special |
 | Space | Dodge |
+| Q | Ultimate (when the meter is full): Inferno, Tsunami, Earthquake or Tornado |
 | P | Pause |
 | M | Mute |
 | G | Graphics quality (Low / Medium / High) |
 
 **Controller** (Xbox / PlayStation): left stick move · right stick aim (or auto-aim) · RT or A attack ·
-B or RB special · X or LB dodge · Start pause. On the menu, D-pad picks the element and A starts.
+B or RB special · X or LB dodge · Y ultimate · Start pause. On the menu, D-pad picks the element and A starts.
 
 ## Feedback
 

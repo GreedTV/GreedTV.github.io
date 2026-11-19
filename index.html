@@ -128,7 +128,11 @@
   .tbtn { position: absolute; overflow: hidden; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(20,30,60,.65); color: #fff; font: 800 12px "Segoe UI", system-ui, sans-serif; letter-spacing: 1px; width: 74px; height: 74px; }
   .tbtn .cd { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(0,0,0,.6); pointer-events: none; }
   .tbtn.big { width: 104px; height: 104px; right: 22px; bottom: 30px; font-size: 14px; border-color: var(--gold); }
-  #tSpc { right: 136px; bottom: 26px; } #tDdg { right: 40px; bottom: 146px; }
+  #tSpc { right: 136px; bottom: 26px; } #tDdg { right: 40px; bottom: 146px; } #tUlt { right: 140px; bottom: 112px; }
+  .ab.ult.ready, .tbtn.ready { border-color: #ffd54a; animation: ultPulse 0.9s ease-in-out infinite; }
+  @keyframes ultPulse { 0%, 100% { box-shadow: 0 0 6px 0 rgba(255,213,74,.5); } 50% { box-shadow: 0 0 22px 4px rgba(255,213,74,.9); } }
+  .float { position: absolute; transform: translate(-50%, -50%); font-weight: 900; font-size: 18px; text-shadow: 0 2px 6px #000, 0 0 2px #000; pointer-events: none; white-space: nowrap; }
+  .float.big { font-size: 30px; letter-spacing: 1px; }
   .tbtn.small { width: 48px; height: 48px; left: 12px; top: 12px; font-size: 18px; }
   .tbtn:active { background: rgba(255,213,74,.35); }
   body.touchmode #help, body.touchmode #abilities, body.touchmode .kbHint, body:not(.touchmode) .touchHint { display: none; }
@@ -200,8 +204,9 @@
     <div class="ab" id="abP"><div class="fill"></div><b>Attack</b><small>Left click</small></div>
     <div class="ab" id="abS"><div class="fill"></div><b id="abSName">Special</b><small>Right click / E</small></div>
     <div class="ab" id="abD"><div class="fill"></div><b>Dodge</b><small>Space</small></div>
+    <div class="ab ult" id="abU"><div class="fill"></div><b id="abUName">Ultimate</b><small>Q</small></div>
   </div>
-  <div id="help"><b>WASD</b> move · <b>Mouse</b> aim<br><b>Hold left click</b> attack · <b>Right click / E</b> special<br><b>Space</b> dodge · <b>P</b> pause · <b>M</b> mute · <b>G</b> graphics</div>
+  <div id="help"><b>WASD</b> move · <b>Mouse</b> aim<br><b>Hold left click</b> attack · <b>Right click / E</b> special<br><b>Space</b> dodge · <b>Q</b> ultimate · <b>P</b> pause · <b>M</b> mute</div>
   <div id="spectate" class="hidden">You're out! Watching your team…</div>
   <div id="skip" class="hidden">Click or press Space to skip</div>
 </div>
@@ -255,6 +260,7 @@
       <li><b>Hit to push.</b> Every hit knocks the target back and fills their <b>strain</b> bar. The fuller it is, the further they fly.</li>
       <li><b>Take zones.</b> Knock all three enemies back across a line and your team takes that zone. Anyone knocked over a line can't walk back past it.</li>
       <li><b>Ring out.</b> Push someone off the back edge into the water and they're out for the round.</li>
+      <li><b>Ultimate.</b> Landing hits charges your ultimate. When it glows, unleash it: Inferno, Tsunami, Earthquake or Tornado.</li>
       <li><b>Win.</b> Knock out the whole team, or hold more ground when time runs out. First to 2 rounds wins.</li>
     </ol>
     <div class="howkeys" id="howKeys"></div>
@@ -267,7 +273,10 @@
     <h2 id="setTitle">Settings</h2>
     <label for="vol">Volume <span id="volVal"></span></label>
     <input type="range" id="vol" min="0" max="100" step="5">
+    <label for="musicVol">Music <span id="musicVal"></span></label>
+    <input type="range" id="musicVol" min="0" max="100" step="5">
     <label class="check"><input type="checkbox" id="voiceOn"> Announcer voice</label>
+    <label class="check"><input type="checkbox" id="calmOn"> Reduce motion (no screen shake or flashes)</label>
     <label>Graphics</label>
     <div class="types" id="gfx"><button type="button" data-q="0">Low</button><button type="button" data-q="1">Medium</button><button type="button" data-q="2">High</button></div>
     <label class="check"><input type="checkbox" id="fpsOn"> Show frame rate</label>
@@ -280,6 +289,7 @@
   <button type="button" id="tAtk" class="tbtn big">ATTACK<i class="cd"></i></button>
   <button type="button" id="tSpc" class="tbtn">SPECIAL<i class="cd"></i></button>
   <button type="button" id="tDdg" class="tbtn">DODGE<i class="cd"></i></button>
+  <button type="button" id="tUlt" class="tbtn">ULT<i class="cd"></i></button>
   <button type="button" id="tPause" class="tbtn small" aria-label="Pause">⏸</button>
 </div>
 <div id="fb" class="hidden" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
@@ -723,11 +733,23 @@ function updateRings(dt) {
   }
 }
 const flashEl = document.getElementById('flash');
-function flash(op = 0.6) { flashEl.style.transition = 'none'; flashEl.style.opacity = op; requestAnimationFrame(() => { flashEl.style.transition = 'opacity .5s'; flashEl.style.opacity = 0; }); }
+function flash(op = 0.6) { if (settings.calm) return; flashEl.style.transition = 'none'; flashEl.style.opacity = op; setTimeout(() => { flashEl.style.transition = 'opacity .5s'; flashEl.style.opacity = 0; }, 30); }
 
 // ---------- element effects ----------
 function fxTrail(p) {
   const P = p.pos;
+  if (p.kind === 'tsunami') {
+    for (let i = 0; i < 6; i++) GLOW.emit(v3(P.x + rnd(1), 0.4 + Math.random() * 1.8, rnd(16)), v3(rnd(2) + p.vel.x * 0.3, 2 + Math.random() * 4, rnd(1)), COL.foam, COL.waterDeep, 0.6, 0.6, 12, 0.3, 0, 0.8);
+    return;
+  }
+  if (p.kind === 'tornado') {
+    for (let i = 0; i < 4; i++) {
+      const a = perfNow * 14 + i * 1.57, h = Math.random() * 3.2, rr = 0.4 + h * 0.45;
+      GLOW.emit(v3(P.x + Math.cos(a) * rr, h, P.z + Math.sin(a) * rr), v3(-Math.sin(a) * 4, 1.5, Math.cos(a) * 4), COL.air, COL.airFade, 0.35, 0.4, 0, 1);
+    }
+    if (Math.random() < 0.3) SMOKE.emit(v3(P.x + rnd(1.5), 0.2, P.z + rnd(1.5)), v3(rnd(2), 1, rnd(2)), COL.dustLight, null, 1, 0.6, 0, 1.5, 1, 0.4);
+    return;
+  }
   if (p.el === 'fire') {
     for (let i = 0; i < 2; i++) GLOW.emit(P.clone().add(rv(p.r)), rv(1.5).addScaledVector(p.vel, -0.05), COL.fireHot, COL.fireEnd, p.r * 2.4, 0.3, -3, -0.5, 2, 0.7);
     if (Math.random() < 0.25) SMOKE.emit(P, v3(rnd(1), 1.2, rnd(1)), COL.smoke, null, p.r * 2, 0.6, -1, 1.5, 1, 0.35);
@@ -819,6 +841,7 @@ function initAudio() {
     const bp2 = actx.createBiquadFilter(); bp2.type = 'bandpass'; bp2.frequency.value = 1400; bp2.Q.value = 0.5;
     cheerGain = actx.createGain(); cheerGain.gain.value = 0;
     src2.connect(bp2); bp2.connect(cheerGain); cheerGain.connect(master); src2.start();
+    startMusic();
   } catch (e) { actx = null; }
 }
 function crowdReact(level) { crowdLevel = Math.min(1, Math.max(crowdLevel, level)); }
@@ -875,6 +898,60 @@ function sfx(type, el, loud = true) {
     case 'beep': tone(660, 660, 0.15, 'square', 0.06); break;
     case 'go': tone(880, 880, 0.35, 'square', 0.07); break;
     case 'dodge': noise(0.15, 1800, 'bandpass', 0.2 * v, 1); break;
+    case 'ult':
+      tone(80, 30, 0.9, 'sine', 0.7); noise(1.0, { fire: 700, water: 500, earth: 120, air: 1600 }[el], 'bandpass', 1.0, 0.6);
+      tone(220, 880, 0.35, 'sawtooth', 0.05); break;
+  }
+}
+// ---- MUSIC: generated live (no audio files). Calm arp + pad on the menu, full beat during fights. ----
+let musicGain = null, musicTimer = null, mNext = 0, mStep = 0;
+const BPM = 116, SIXTEENTH = 60 / BPM / 4;
+const PROG = [ // bar root (MIDI) + chord shape: Am – F – C – G
+  { root: 57, chord: [0, 3, 7, 12] }, { root: 53, chord: [0, 4, 7, 12] },
+  { root: 60, chord: [0, 4, 7, 12] }, { root: 55, chord: [0, 4, 7, 12] },
+];
+const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+function musicLevel() { return (settings.music / 100) * 0.55 * (paused || anyModal() ? 0.4 : 1); }
+function startMusic() {
+  if (!actx || musicTimer) return;
+  musicGain = actx.createGain(); musicGain.gain.value = 0; musicGain.connect(master);
+  mNext = actx.currentTime + 0.15;
+  musicTimer = setInterval(musicTick, 25);
+}
+function musicTick() {
+  if (!actx) return;
+  musicGain.gain.setTargetAtTime(musicLevel(), actx.currentTime, 0.3);
+  while (mNext < actx.currentTime + 0.12) { playStep(mStep, mNext); mNext += SIXTEENTH; mStep = (mStep + 1) % 64; }
+}
+function mOsc(t, f0, f1, dur, type, vol, attack = 0.005, filt = 0) {
+  const o = actx.createOscillator(), g = actx.createGain(); o.type = type;
+  o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  let out = g;
+  if (filt) { const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = filt; g.connect(lp); out = lp; }
+  o.connect(g); out.connect(musicGain); o.start(t); o.stop(t + dur + 0.05);
+}
+function mNoise(t, dur, freq, vol) {
+  const s = actx.createBufferSource(); s.buffer = noiseBuf;
+  const f = actx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = freq;
+  const g = actx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(musicGain); s.start(t, Math.random()); s.stop(t + dur + 0.02);
+}
+function playStep(s, t) {
+  const bar = PROG[Math.floor(s / 16)], b = s % 16;
+  const fight = ['intro', 'countdown', 'play', 'roundEnd'].includes(state);
+  const tense = state === 'play' && timer < 15;
+  if (fight) {
+    if (b % 4 === 0) mOsc(t, 130, 42, 0.22, 'sine', 0.9);                       // kick
+    if (b === 4 || b === 12) { mNoise(t, 0.14, 1400, 0.35); mOsc(t, 220, 140, 0.1, 'triangle', 0.15); } // snare
+    if (b % 2 === 1 || tense) mNoise(t, 0.04, 7000, b % 4 === 2 ? 0.12 : 0.06); // hats
+    if (b % 2 === 0) mOsc(t, mtof(bar.root - 24 + (b % 8 === 6 ? 7 : 0)), mtof(bar.root - 24 + (b % 8 === 6 ? 7 : 0)), SIXTEENTH * 1.8, 'sawtooth', 0.22, 0.01, 420); // bass
+  } else if (b === 0) {
+    for (const iv of bar.chord.slice(0, 3)) mOsc(t, mtof(bar.root + iv - 12), mtof(bar.root + iv - 12), SIXTEENTH * 16, 'sawtooth', 0.035, 0.9, 900); // pad
+  }
+  if (b % 2 === 0) { // arp
+    const n = bar.root + bar.chord[(b / 2) % 4] + (fight ? 12 : 0);
+    mOsc(t, mtof(n), mtof(n), 0.22, 'triangle', fight ? 0.07 : 0.05, 0.005, 3000);
   }
 }
 function say(text) {
@@ -882,7 +959,7 @@ function say(text) {
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1.05; u.pitch = 0.75; u.volume = 0.9; speechSynthesis.speak(u); } catch (e) {}
 }
 // ---- player settings (saved in this browser) ----
-const settings = { vol: 80, voice: true, fps: false };
+const settings = { vol: 80, music: 50, voice: true, fps: false, calm: false };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('aoe-settings')) || {}); } catch (e) {}
 function saveSettings() { try { localStorage.setItem('aoe-settings', JSON.stringify(settings)); } catch (e) {} }
 function masterLevel() { return muted ? 0 : (settings.vol / 100) * 0.6; }
@@ -950,7 +1027,7 @@ function makeFighter(team, el, slot, isHuman, look) {
     vy: 0, strain: 0, line: 0, out: false, falling: false, cd: { p: 0, s: 0, d: 0 },
     dodgeT: 0, stunT: 0, flashT: 0, punchIdx: 0, auraT: Math.random() * 0.2,
     ai: { think: 0, target: null, strafe: 0, depthOff: 2, fireDelay: 0.5, skill: 0.55 + Math.random() * 0.35, dodge: 0.3, aggr: 1 },
-    stats: { hits: 0, kos: 0, outs: 0 }, lastHitBy: null, lastHitT: -99,
+    stats: { hits: 0, kos: 0, outs: 0 }, lastHitBy: null, lastHitT: -99, ult: 0,
   };
 }
 const active = (f) => !f.out && !f.falling;
@@ -1039,7 +1116,9 @@ function startMatch(el) {
   document.getElementById('hud').classList.remove('hidden');
   const S = ELEMENTS[el];
   document.getElementById('abSName').textContent = S.special.name;
-  for (const id of ['abP', 'abS', 'abD']) document.getElementById(id).style.setProperty('--elc', S.css);
+  for (const id of ['abP', 'abS', 'abD', 'abU']) document.getElementById(id).style.setProperty('--elc', S.css);
+  document.getElementById('abUName').textContent = ULT_NAMES[el][0] + ULT_NAMES[el].slice(1).toLowerCase();
+  for (const f of floats) f.d.remove(); floats.length = 0;
   resetRound();
 }
 const NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
@@ -1047,7 +1126,7 @@ function resetRound() {
   F = [0, 0]; timer = ROUND_TIME; clearProjectiles(); roundWinner = -1;
   for (const f of fighters) {
     f.out = false; f.falling = false; f.strain = 0; f.line = 0; f.vy = 0;
-    f.kb.set(0, 0, 0); f.mv.set(0, 0, 0); f.cd.p = f.cd.s = f.cd.d = 0; f.dodgeT = f.stunT = 0;
+    f.kb.set(0, 0, 0); f.mv.set(0, 0, 0); f.cd.p = f.cd.s = f.cd.d = 0; f.dodgeT = f.stunT = 0; f.ult = 0;
     f.pos.set(f.side * 3, 0, (f.slot - 1) * 4.5);
     f.facing.set(-f.side, 0, 0);
     f.mesh.root.visible = true; f.mesh.root.rotation.set(0, Math.atan2(-f.side, 0), 0);
@@ -1077,9 +1156,18 @@ const MAT = {
   air: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.25, 1.4), transparent: true, opacity: 0.65, depthWrite: false }),
   airGlow: spriteMat(0xbfefff, 0.6, 0.4),
 };
+const ULT_KINDS = new Set(['tsunami', 'tornado']);
 function makeProjMesh(el, r, kind) {
   const g = new THREE.Group(); g.userData.parts = [];
-  if (kind === 'wave') {
+  if (kind === 'tsunami') {
+    // ultimate: a wave as wide as the arena
+    const m = new THREE.Mesh(GEO.sphere, MAT.water); m.scale.set(8.2, 1.2, 0.7); m.position.y = -0.2; g.add(m);
+    const gl = new THREE.Sprite(MAT.waterGlow); gl.scale.set(18, 3.5, 1); g.add(gl);
+  } else if (kind === 'tornado') {
+    // ultimate: a spinning column of wind rings
+    for (let i = 0; i < 5; i++) { const m = new THREE.Mesh(GEO.torus, MAT.air); m.scale.setScalar(0.45 + i * 0.32); m.rotation.x = Math.PI / 2; m.position.y = -1.2 + i * 0.75; g.add(m); }
+    const gl = new THREE.Sprite(MAT.airGlow); gl.scale.set(4.5, 6, 1); g.add(gl); g.userData.tornado = true;
+  } else if (kind === 'wave') {
     const m = new THREE.Mesh(GEO.sphere, MAT.water); m.scale.set(r * 2.0, r * 0.6, r * 0.45); g.add(m);
     const gl = new THREE.Sprite(MAT.waterGlow); gl.scale.set(r * 6, r * 2.5, 1); g.add(gl);
   } else if (el === 'fire') {
@@ -1105,8 +1193,10 @@ function spawnProjectile(f, dir, P, kind = null) {
   projectiles.push({
     team: f.team, owner: f, el: f.el, kind, pos, vel: dir.clone().multiplyScalar(P.speed), r: P.radius,
     force: P.force, strain: P.strain, life: P.life || 1.4, mesh, dead: false,
-    weight: kind === 'wave' ? 4 : ELEMENTS[f.el].weight, pierce: kind === 'wave', hitSet: new Set(), seen: new Set(),
+    weight: ULT_KINDS.has(kind) ? 9 : kind === 'wave' ? 4 : ELEMENTS[f.el].weight,
+    pierce: kind === 'wave' || ULT_KINDS.has(kind), isUlt: ULT_KINDS.has(kind), hitSet: new Set(), seen: new Set(),
   });
+  return projectiles[projectiles.length - 1];
 }
 function attack(f, dir) {
   if (f.cd.p > 0 || !active(f)) return;
@@ -1147,6 +1237,8 @@ function doSpecial(f, dir) {
           e.kb.addScaledVector(to, 9 * (1 + e.strain / 55) * (1 - d / 14));
           e.strain = Math.min(160, e.strain + 6); e.stunT = 0.25; e.flashT = 0.12;
           f.stats.hits++; e.lastHitBy = f; e.lastHitT = perfNow;
+          f.ult = Math.min(100, f.ult + 4); e.ult = Math.min(100, e.ult + 3);
+          if (f.human) spawnFloat('+6%', e, ELEMENTS.air.css);
           playOnce(e.mesh, 'hitA', 1.6);
         }
       }
@@ -1164,6 +1256,63 @@ function doSpecial(f, dir) {
     }
   }
 }
+// ---- ULTIMATES: charged by landing hits (and a little by taking them) ----
+const ULT_NAMES = { fire: 'INFERNO', water: 'TSUNAMI', earth: 'EARTHQUAKE', air: 'TORNADO' };
+function ultHit(f, e, dir, force, strain) {
+  const mult = 1 + e.strain / 55;
+  e.kb.addScaledVector(dir, force * mult);
+  e.strain = Math.min(160, e.strain + strain); e.stunT = 0.35; e.flashT = 0.15;
+  f.stats.hits++; e.lastHitBy = f; e.lastHitT = perfNow;
+  playOnce(e.mesh, 'hitB', 1.6);
+  if (f.human) spawnFloat(`+${strain}%`, e, ELEMENTS[f.el].css, true);
+}
+function useUlt(f, dir) {
+  if (f.ult < 100 || !active(f)) return;
+  f.ult = 0;
+  const fwd = v3(-f.side, 0, 0), E = ELEMENTS[f.el];
+  if (f.human) { announce(ULT_NAMES[f.el] + '!', E.css); say(ULT_NAMES[f.el].toLowerCase()); }
+  else toast(`${fighterName(f)}: ${ULT_NAMES[f.el]}!`, TEAM[f.team].css);
+  sfx('ult', f.el); crowdReact(1); hitStop = Math.max(hitStop, 0.12);
+  shake = Math.max(shake, f.human ? 0.6 : 0.3);
+  if (f.el === 'fire') {
+    // INFERNO: a blast of fire around you that hurls nearby enemies back
+    playOnce(f.mesh, 'cast', 0.9);
+    for (const e of fighters) {
+      if (e.team === f.team || !active(e) || e.dodgeT > 0) continue;
+      const to = e.pos.clone().sub(f.pos); to.y = 0; const d = to.length();
+      if (d < 10) ultHit(f, e, fwd.clone().multiplyScalar(0.75).addScaledVector(to.normalize(), 0.25).normalize(), 16 * (1 - d / 16), 15);
+    }
+    for (let i = 0; i < 140; i++) {
+      const a = Math.random() * Math.PI * 2, s = 10 + Math.random() * 10;
+      GLOW.emit(v3(f.pos.x, 0.5 + Math.random() * 1.5, f.pos.z), v3(Math.cos(a) * s, 1 + Math.random() * 3, Math.sin(a) * s), COL.fireHot, COL.fireEnd, 0.9, 0.6, -2, 1, 2.5);
+    }
+    for (let i = 0; i < 3; i++) spawnRing(v3(f.pos.x, 0.15 + i * 0.4, f.pos.z), 0xff6a1a, 0.5, 10 - i * 2, 0.6 + i * 0.1, null, 0.9, 2);
+    flash(0.25);
+  } else if (f.el === 'water') {
+    // TSUNAMI: an arena-wide wave rolling toward the enemy side
+    playOnce(f.mesh, 'punchB', 1.0);
+    const p = spawnProjectile(f, fwd, { speed: 13, radius: 1.3, force: 15, strain: 14, life: 2.4 }, 'tsunami');
+    p.pos.z = 0; p.pos.y = 1.0; p.mesh.position.copy(p.pos);
+  } else if (f.el === 'earth') {
+    // EARTHQUAKE: a shockwave through the ground that hits every enemy in front of you
+    playOnce(f.mesh, 'stomp', 1.2);
+    for (const e of fighters) {
+      if (e.team === f.team || !active(e) || e.dodgeT > 0) continue;
+      ultHit(f, e, fwd, 14, 15);
+      spawnDebris(v3(e.pos.x, 0.2, e.pos.z), 8, 7, 0.22);
+    }
+    for (let x = f.pos.x; Math.abs(x - f.pos.x) < 30 && Math.abs(x) < HALF_LEN; x += fwd.x * 1.5) {
+      spawnDebris(v3(x, 0.1, rnd(14)), 2, 6, 0.18);
+      SMOKE.emit(v3(x, 0.2, rnd(14)), v3(rnd(1), 2, rnd(1)), COL.dust, null, 2, 1, 0, 1.5, 1, 0.6);
+    }
+    spawnRing(v3(f.pos.x, 0.1, f.pos.z), 0xc49a6c, 0.5, 14, 0.8, null, 0.8, 1.5);
+  } else {
+    // TORNADO: a slow twister that plows through everyone in its path
+    playOnce(f.mesh, 'cast', 0.9);
+    const p = spawnProjectile(f, dir, { speed: 8, radius: 2.0, force: 13, strain: 14, life: 2.8 }, 'tornado');
+    p.pos.y = 1.4; p.mesh.position.copy(p.pos);
+  }
+}
 function dodge(f, dir) {
   if (f.cd.d > 0 || !active(f)) return;
   f.dodgeT = ELEMENTS[f.el].dodgeTime || 0.18; f.dodgeDir.copy(dir).setY(0).normalize(); f.cd.d = 1.1;
@@ -1177,6 +1326,9 @@ function killProjectile(p, fx = true) {
 }
 function hitFighter(f, p) {
   p.owner.stats.hits++; f.lastHitBy = p.owner; f.lastHitT = perfNow;
+  if (!p.isUlt) p.owner.ult = Math.min(100, p.owner.ult + (p.kind ? 5 : 7));
+  f.ult = Math.min(100, f.ult + 3); // getting hit charges a little too (comeback)
+  if (p.owner.human) spawnFloat(`+${p.strain}%`, f, ELEMENTS[p.el].css, p.isUlt);
   const dir = p.vel.clone().setY(0).normalize();
   const mult = 1 + f.strain / 55, power = p.force * mult;
   f.kb.addScaledVector(dir, power);
@@ -1206,14 +1358,19 @@ function updateProjectiles(dt) {
     fxTrail(p);
     if (p.life <= 0) { killProjectile(p, false); continue; }
     if (Math.abs(p.pos.x) > HALF_LEN + 30 || Math.abs(p.pos.z) > 40) { killProjectile(p, false); continue; }
-    for (const w of walls) if (w.team !== p.team && w.hp > 0 && wallHit(w, p.pos, p.r)) {
-      w.hp -= p.kind === 'wave' ? 2 : 1; killProjectile(p); spawnDebris(p.pos, 3, 4, 0.12); sfx('clash', 'earth', p.owner.human); break;
+    if (u.tornado) p.mesh.rotation.y += dt * 9;
+    for (const w of walls) {
+      if (w.team === p.team || w.hp <= 0) continue;
+      if (p.kind === 'tsunami' ? Math.abs(w.pos.x - p.pos.x) < 1.2 : wallHit(w, p.pos, p.r)) {
+        if (p.isUlt) { w.hp = 0; continue; } // ultimates smash straight through walls
+        w.hp -= p.kind === 'wave' ? 2 : 1; killProjectile(p); spawnDebris(p.pos, 3, 4, 0.12); sfx('clash', 'earth', p.owner.human); break;
+      }
     }
     if (p.dead) continue;
     for (const f of fighters) {
       if (f.team === p.team || !active(f) || f.dodgeT > 0 || p.hitSet.has(f)) continue;
       const dx = f.pos.x - p.pos.x, dz = f.pos.z - p.pos.z;
-      if (dx * dx + dz * dz < (p.r + FR) ** 2) {
+      if (p.kind === 'tsunami' ? Math.abs(dx) < 1.3 : dx * dx + dz * dz < (p.r + FR) ** 2) {
         hitFighter(f, p);
         if (p.pierce) p.hitSet.add(f); else { p.dead = true; scene.remove(p.mesh); break; }
       }
@@ -1317,8 +1474,8 @@ function closeModal(el) {
 }
 function renderHowKeys() {
   document.getElementById('howKeys').innerHTML = touchMode
-    ? '<b>Left stick</b> move · <b>ATTACK</b> (hold) fires at the nearest enemy · <b>SPECIAL</b> element power · <b>DODGE</b> quick roll · <b>⏸</b> pause'
-    : '<b>WASD</b> move · <b>Mouse</b> aim · <b>Hold left click</b> attack · <b>Right click / E</b> special · <b>Space</b> dodge · <b>P</b> pause · <b>M</b> mute · <b>G</b> graphics';
+    ? '<b>Left stick</b> move · <b>ATTACK</b> (hold) fires at the nearest enemy · <b>SPECIAL</b> element power · <b>DODGE</b> quick roll · <b>ULT</b> ultimate when it glows · <b>⏸</b> pause'
+    : '<b>WASD</b> move · <b>Mouse</b> aim · <b>Hold left click</b> attack · <b>Right click / E</b> special · <b>Space</b> dodge · <b>Q</b> ultimate (when charged) · <b>P</b> pause · <b>M</b> mute · <b>G</b> graphics';
 }
 function openHow() { renderHowKeys(); openModal(howEl); }
 document.getElementById('howBtn').addEventListener('click', openHow);
@@ -1327,12 +1484,17 @@ const volEl = document.getElementById('vol'), volVal = document.getElementById('
 function renderSettings() {
   volEl.value = settings.vol; volVal.textContent = settings.vol + '%';
   document.getElementById('voiceOn').checked = settings.voice;
+  document.getElementById('calmOn').checked = settings.calm;
+  musicEl.value = settings.music; document.getElementById('musicVal').textContent = settings.music + '%';
   document.getElementById('fpsOn').checked = settings.fps;
   document.querySelectorAll('#gfx button').forEach(b => b.classList.toggle('on', +b.dataset.q === qIdx));
 }
 document.getElementById('setBtn').addEventListener('click', () => { renderSettings(); openModal(setEl); });
 document.getElementById('setClose').addEventListener('click', () => closeModal(setEl));
 volEl.addEventListener('input', () => { settings.vol = +volEl.value; volVal.textContent = settings.vol + '%'; applyVolume(); saveSettings(); });
+const musicEl = document.getElementById('musicVol');
+musicEl.addEventListener('input', () => { settings.music = +musicEl.value; document.getElementById('musicVal').textContent = settings.music + '%'; saveSettings(); });
+document.getElementById('calmOn').addEventListener('change', (e) => { settings.calm = e.target.checked; saveSettings(); });
 document.getElementById('voiceOn').addEventListener('change', (e) => { settings.voice = e.target.checked; saveSettings(); if (!settings.voice && 'speechSynthesis' in window) speechSynthesis.cancel(); });
 document.getElementById('fpsOn').addEventListener('change', (e) => { settings.fps = e.target.checked; saveSettings(); });
 document.getElementById('gfx').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { qIdx = +b.dataset.q; applyQuality(); renderSettings(); } });
@@ -1366,6 +1528,7 @@ tAtk.addEventListener('pointerdown', (e) => { touchMode = true; initAudio(); tou
 for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, (e) => { if (e.pointerId === atkId) { atkId = null; touch.atk = false; } });
 document.getElementById('tSpc').addEventListener('pointerdown', (e) => { initAudio(); specialQ = true; e.preventDefault(); });
 document.getElementById('tDdg').addEventListener('pointerdown', (e) => { initAudio(); dodgeQ = true; e.preventDefault(); });
+document.getElementById('tUlt').addEventListener('pointerdown', (e) => { initAudio(); ultQ = true; e.preventDefault(); });
 document.getElementById('tPause').addEventListener('pointerdown', (e) => {
   e.preventDefault();
   if (['play', 'countdown', 'intro', 'roundEnd'].includes(state)) { paused = !paused; document.getElementById('pause').classList.toggle('hidden', !paused); }
@@ -1404,18 +1567,19 @@ function pollPad() {
       if (state === 'intro' && press(0)) skipIntro = true;
       if (press(1) || press(5)) specialQ = true;
       if (press(2) || press(4)) dodgeQ = true;
+      if (press(3)) ultQ = true;
     }
     pad.atk = btn(7) || btn(0);
   }
   padPrev = gp.buttons.map(b => b.pressed);
 }
-const abHints = { p: document.querySelector('#abP small'), s: document.querySelector('#abS small'), d: document.querySelector('#abD small') };
+const abHints = { p: document.querySelector('#abP small'), s: document.querySelector('#abS small'), d: document.querySelector('#abD small'), u: document.querySelector('#abU small') };
 let hintMode = '';
 function updateHints() {
   const mode = padMode ? 'pad' : 'kb';
   if (mode === hintMode) return; hintMode = mode;
-  const H = padMode ? ['RT / A', 'B / RB', 'X / LB'] : ['Left click', 'Right click / E', 'Space'];
-  abHints.p.textContent = H[0]; abHints.s.textContent = H[1]; abHints.d.textContent = H[2];
+  const H = padMode ? ['RT / A', 'B / RB', 'X / LB', 'Y'] : ['Left click', 'Right click / E', 'Space', 'Q'];
+  abHints.p.textContent = H[0]; abHints.s.textContent = H[1]; abHints.d.textContent = H[2]; abHints.u.textContent = H[3];
 }
 
 let fpsT = 0, fpsFrames = 0;
@@ -1432,7 +1596,7 @@ function updateTopUI(raw) {
 }
 
 // ================= CONTROL =================
-const keys = {}; let mouseDown = false, specialQ = false, dodgeQ = false;
+const keys = {}; let mouseDown = false, specialQ = false, dodgeQ = false, ultQ = false;
 const mouse = new THREE.Vector2(), ray = new THREE.Raycaster(), aimPlane = new THREE.Plane(v3(0, 1, 0), -1.35), aimPt = v3();
 addEventListener('keydown', (e) => {
   if (fbOpen) { if (e.code === 'Escape') closeFeedback(); return; }
@@ -1441,6 +1605,7 @@ addEventListener('keydown', (e) => {
   if (/^Key[WASD]$/.test(e.code)) { touchMode = false; padMode = false; }
   keys[e.code] = true;
   if (e.code === 'KeyE') specialQ = true;
+  if (e.code === 'KeyQ') ultQ = true;
   if (e.code === 'Space') { dodgeQ = true; e.preventDefault(); if (state === 'intro') skipIntro = true; }
   if (e.code === 'KeyM') toggleMute();
   if (e.code === 'KeyG') { qIdx = (qIdx + 1) % QUALITY.length; applyQuality(true); }
@@ -1469,7 +1634,7 @@ function controlHuman(f) {
     if (touch.atk || pad.atk) attack(f, dir);
     if (specialQ) doSpecial(f, dir);
     if (dodgeQ) dodge(f, f.want.lengthSq() > 0.01 ? f.want : v3(0, 0, f.pos.z > 0 ? -1 : 1));
-    specialQ = dodgeQ = false;
+    if (ultQ) useUlt(f, dir); specialQ = dodgeQ = ultQ = false;
     return;
   }
   const ws = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), ad = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
@@ -1481,7 +1646,7 @@ function controlHuman(f) {
   if (mouseDown) attack(f, dir);
   if (specialQ) doSpecial(f, dir);
   if (dodgeQ) dodge(f, f.want.lengthSq() > 0.01 ? f.want : v3(0, 0, f.pos.z > 0 ? -1 : 1));
-  specialQ = dodgeQ = false;
+  if (ultQ) useUlt(f, dir); specialQ = dodgeQ = ultQ = false;
 }
 
 const PREF_DEPTH = { earth: 1.2, water: 2.2, fire: 2.6, air: 3.2 };
@@ -1511,6 +1676,11 @@ function controlAI(f, dt) {
   f.facing.copy(dir);
   ai.fireDelay -= dt;
   if (f.cd.p <= 0 && ai.fireDelay <= 0) { attack(f, dir); ai.fireDelay = (0.15 + Math.random() * 0.55) * ai.aggr; }
+  if (f.ult >= 100) {
+    ai.ultHeld = (ai.ultHeld || 0) + dt;
+    const near = nearestEnemy(f), nd = near ? near.pos.distanceTo(f.pos) : 99;
+    if ((Math.random() < dt * 0.8 / ai.aggr && (f.el !== 'fire' || nd < 10)) || ai.ultHeld > 3) { ai.ultHeld = 0; useUlt(f, dir); }
+  }
   if (f.cd.s <= 0) {
     const k = f.el;
     let incoming = false;
@@ -1561,7 +1731,7 @@ function updateFighter(f, dt) {
       fxSplash(f.pos.x, f.pos.z); sfx('splash');
       f.stats.outs++;
       const by = f.lastHitBy && perfNow - f.lastHitT < 5 ? f.lastHitBy : null;
-      if (by) by.stats.kos++;
+      if (by) { by.stats.kos++; if (by.human) spawnFloat('KO!', f, '#ffd54a', true); }
       toast(`${fighterName(f)} ${f.human ? 'are' : 'is'} OUT!${by ? ` (knocked out by ${by.human ? 'you' : fighterName(by)})` : ''}`, TEAM[f.team].css);
       if (f.human) document.getElementById('spectate').classList.remove('hidden');
     }
@@ -1714,9 +1884,27 @@ document.querySelectorAll('.card').forEach(c => {
   c.addEventListener('click', () => startMatch(c.dataset.el));
   c.addEventListener('mouseenter', () => { if (previewEl !== c.dataset.el) { previewEl = c.dataset.el; rebuildPreview(); } });
 });
-const abEls = { p: document.getElementById('abP'), s: document.getElementById('abS'), d: document.getElementById('abD') };
+const abEls = { p: document.getElementById('abP'), s: document.getElementById('abS'), d: document.getElementById('abD'), u: document.getElementById('abU') };
+const tUltEl = document.getElementById('tUlt');
+// floating hit numbers ("+8%", "KO!") over fighters you hit
+const floats = [];
+function spawnFloat(text, target, color, big = false) {
+  const d = document.createElement('div'); d.className = 'float' + (big ? ' big' : ''); d.textContent = text; d.style.color = color;
+  labelsEl.appendChild(d);
+  floats.push({ d, pos: v3(target.pos.x + rnd(0.6), 2.6, target.pos.z), t: 0, life: big ? 1.1 : 0.8 });
+}
+function updateFloats(rdt) {
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const f = floats[i]; f.t += rdt; f.pos.y += rdt * 1.4;
+    if (f.t >= f.life) { f.d.remove(); floats.splice(i, 1); continue; }
+    projV.set(f.pos.x, f.pos.y, f.pos.z).project(camera);
+    f.d.style.left = `${(projV.x * 0.5 + 0.5) * innerWidth}px`; f.d.style.top = `${(-projV.y * 0.5 + 0.5) * innerHeight}px`;
+    const k = f.t / f.life; f.d.style.opacity = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+    f.d.style.transform = `translate(-50%, -50%) scale(${k < 0.15 ? 0.6 + k / 0.15 * 0.5 : 1.1 - Math.min(0.1, k * 0.1)})`;
+  }
+}
 const timerEl = document.getElementById('timer');
-const touchCd = { p: document.querySelector('#tAtk .cd'), s: document.querySelector('#tSpc .cd'), d: document.querySelector('#tDdg .cd') };
+const touchCd = { p: document.querySelector('#tAtk .cd'), s: document.querySelector('#tSpc .cd'), d: document.querySelector('#tDdg .cd'), u: document.querySelector('#tUlt .cd') };
 const myStrainBar = document.querySelector('#myStrain i'), myStrainTxt = document.querySelector('#myStrain b');
 document.getElementById('pause').addEventListener('pointerdown', () => { if (paused && !anyModal()) { paused = false; document.getElementById('pause').classList.add('hidden'); } });
 const projV = v3();
@@ -1731,6 +1919,9 @@ function updateHUD() {
       abEls[k].classList.toggle('ready', frac <= 0);
       touchCd[k].style.height = `${frac * 100}%`;
     }
+    const uf = 1 - human.ult / 100, uReady = human.ult >= 100 && active(human);
+    abEls.u.querySelector('.fill').style.height = `${uf * 100}%`; abEls.u.classList.toggle('ready', uReady);
+    touchCd.u.style.height = `${uf * 100}%`; tUltEl.classList.toggle('ready', uReady);
     const s = Math.min(1, human.strain / 160);
     myStrainBar.style.width = `${s * 100}%`;
     myStrainBar.style.background = s < 0.35 ? '#ffd54a' : s < 0.7 ? '#ff9a3d' : '#ff3b3b';
@@ -1773,7 +1964,7 @@ function updateCamera(rdt) {
   }
   if (slow.t > 0 && slow.focus) { camTarget.copy(camera.position); camLook.copy(lookNow).lerp(slow.focus.pos, 0.5); fov = portrait ? 55 : 40; }
   camera.position.lerp(camTarget, k); lookNow.lerp(camLook, k);
-  if (shake > 0) { camera.position.add(rv(shake)); shake = Math.max(0, shake - rdt * 1.5); }
+  if (shake > 0) { if (!settings.calm) camera.position.add(rv(shake)); shake = Math.max(0, shake - rdt * 1.5); }
   camera.lookAt(lookNow);
   if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * (1 - Math.exp(-6 * rdt)); camera.updateProjectionMatrix(); updatePointScale(); }
 }
@@ -1849,7 +2040,7 @@ function tick(dt, rdt) {
   front.position.x += (fx - front.position.x) * (1 - Math.exp(-6 * dt)); frontGlow.position.x = front.position.x;
   frontGlow.material.opacity = 0.6 + Math.sin(perfNow * 5) * 0.25;
   let t1 = performance.now();
-  GLOW.update(dt); SMOKE.update(dt); updateDebris(dt); updateRings(dt);
+  GLOW.update(dt); SMOKE.update(dt); updateDebris(dt); updateRings(dt); updateFloats(rdt);
   pm('particles', t1); t1 = performance.now();
   updateCamera(rdt);
   jbT -= rdt; if (jbT <= 0) { jbT = 0.25; drawJumbo(); }
