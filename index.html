@@ -72,6 +72,24 @@
   .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   kbd { background: #222b4a; border-radius: 4px; padding: 1px 6px; font-family: inherit; color: var(--text); }
   #credit { position: fixed; bottom: 8px; right: 12px; font-size: 11px; color: #5d6890; }
+  #fbBtn { position: fixed; top: 14px; right: 14px; z-index: 20; background: var(--panel); color: var(--text); border: 2px solid rgba(255,255,255,.18);
+    border-radius: 10px; padding: 8px 14px; font: 700 14px "Segoe UI", system-ui, sans-serif; cursor: pointer; }
+  #fbBtn:hover { border-color: var(--gold); color: var(--gold); }
+  #fb { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(4,6,14,.7); padding: 16px; }
+  #fb .box { width: min(460px, 100%); background: #0e1430; border: 2px solid rgba(255,255,255,.12); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  #fb h2 { margin: 0; font-size: 22px; letter-spacing: 1px; }
+  #fb label { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  #fb .types, #fb .stars { display: flex; gap: 6px; flex-wrap: wrap; }
+  #fb .types button { background: #1d2a55; color: var(--text); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; padding: 6px 12px; font: 700 13px inherit; cursor: pointer; }
+  #fb .types button.on { border-color: var(--gold); color: var(--gold); }
+  #fb .stars button { background: none; border: none; font-size: 28px; line-height: 1; cursor: pointer; color: #3a4466; padding: 0 2px; }
+  #fb .stars button.on { color: var(--gold); }
+  #fb textarea { width: 100%; min-height: 110px; resize: vertical; background: #070b18; color: var(--text); border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 10px; font: 14px "Segoe UI", system-ui, sans-serif; }
+  #fb .check { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  #fb .note { font-size: 12px; color: var(--muted); margin: 0; }
+  #fb .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  #fb .ghost { background: transparent; border-color: rgba(255,255,255,.2); }
+  #fbMsg { font-size: 13px; color: var(--gold); min-height: 1em; }
   .overlay.menu { justify-content: space-between; padding: 24px 16px;
     background: linear-gradient(to bottom, rgba(7,11,24,.88), rgba(7,11,24,.2) 26%, rgba(7,11,24,0) 45%, rgba(7,11,24,.55) 62%, rgba(7,11,24,.92) 80%); }
   .menuTop, .menuBottom { display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -155,8 +173,33 @@
   </div>
 </div>
 
-<div id="pause" class="overlay hidden"><h1>PAUSED</h1><p>Press <kbd>P</kbd> to continue</p></div>
+<div id="pause" class="overlay hidden"><h1>PAUSED</h1><p>Press <kbd>P</kbd> to continue · 💬 Feedback button is at the top right</p></div>
 <div id="credit">Characters &amp; animations: Quaternius (CC0)</div>
+<button id="fbBtn" type="button">💬 Feedback</button>
+<div id="fb" class="hidden" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
+  <div class="box">
+    <h2 id="fbTitle">Send feedback</h2>
+    <label>What kind?</label>
+    <div class="types" id="fbTypes">
+      <button type="button" data-t="Bug" class="on">🐞 Bug</button>
+      <button type="button" data-t="Idea">💡 Idea</button>
+      <button type="button" data-t="Balance">⚖️ Balance</button>
+      <button type="button" data-t="Other">💬 Other</button>
+    </div>
+    <label>How much do you like the game?</label>
+    <div class="stars" id="fbStars"></div>
+    <label for="fbText">Your message</label>
+    <textarea id="fbText" maxlength="3000" placeholder="What happened, or what would make the game better?"></textarea>
+    <label class="check"><input type="checkbox" id="fbInfo" checked> Attach game details (element, graphics level, browser)</label>
+    <p class="note">“Send” opens a pre-filled post on the game's GitHub page (a free GitHub account is needed to post). No account? Use “Copy” and send it any way you like.</p>
+    <div id="fbMsg"></div>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="fbCancel">Cancel</button>
+      <button type="button" class="btn ghost" id="fbCopy">Copy</button>
+      <button type="button" class="btn" id="fbSend">Send on GitHub</button>
+    </div>
+  </div>
+</div>
 
 <script type="importmap">{ "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -1072,10 +1115,72 @@ function updateWalls(dt) {
   walls = walls.filter(w => !w.dead);
 }
 
+// ================= FEEDBACK =================
+// Opens a pre-filled GitHub issue on the game's repo (no server needed), or copies the text.
+const FEEDBACK_REPO = 'GreedTV/GreedTV.github.io';
+const fbEl = document.getElementById('fb'), fbBtn = document.getElementById('fbBtn'), fbText = document.getElementById('fbText'), fbMsg = document.getElementById('fbMsg');
+let fbOpen = false, fbType = 'Bug', fbRating = 0, fbPausedByUs = false;
+document.getElementById('fbStars').innerHTML = [1, 2, 3, 4, 5].map(n => `<button type="button" data-r="${n}" aria-label="${n} star${n > 1 ? 's' : ''}">★</button>`).join('');
+function renderFb() {
+  document.querySelectorAll('#fbTypes button').forEach(b => b.classList.toggle('on', b.dataset.t === fbType));
+  document.querySelectorAll('#fbStars button').forEach(b => b.classList.toggle('on', +b.dataset.r <= fbRating));
+}
+document.getElementById('fbTypes').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { fbType = b.dataset.t; renderFb(); } });
+document.getElementById('fbStars').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { fbRating = +b.dataset.r; renderFb(); } });
+function openFeedback() {
+  fbOpen = true; fbMsg.textContent = ''; mouseDown = false; for (const k in keys) keys[k] = false;
+  if (['play', 'countdown', 'intro', 'roundEnd'].includes(state) && !paused) { paused = true; fbPausedByUs = true; }
+  fbEl.classList.remove('hidden'); renderFb(); fbText.focus();
+}
+function closeFeedback() {
+  fbOpen = false; fbEl.classList.add('hidden');
+  if (fbPausedByUs) { paused = false; fbPausedByUs = false; }
+}
+function feedbackText() {
+  const lines = [];
+  lines.push(`**Type:** ${fbType}`);
+  lines.push(`**Rating:** ${fbRating ? '★'.repeat(fbRating) + '☆'.repeat(5 - fbRating) + ` (${fbRating}/5)` : 'not given'}`);
+  lines.push('', fbText.value.trim() || '(no message)');
+  if (document.getElementById('fbInfo').checked) {
+    lines.push('', '---', '**Game details**',
+      `- Element: ${human ? ELEMENTS[human.el].name : ELEMENTS[chosenEl].name}`,
+      `- Screen: ${state}${state !== 'menu' ? `, round ${round}, score Blue ${wins[0]} – ${wins[1]} Red` : ''}`,
+      `- Graphics: ${QUALITY[qIdx].name}`,
+      `- Window: ${innerWidth}×${innerHeight}`,
+      `- Browser: ${navigator.userAgent}`);
+  }
+  return lines.join('\n');
+}
+function feedbackTitle() {
+  const first = fbText.value.trim().split('\n')[0].slice(0, 60);
+  return `[${fbType}] ${first || 'Player feedback'}`;
+}
+fbBtn.addEventListener('click', openFeedback);
+document.getElementById('fbCancel').addEventListener('click', closeFeedback);
+fbEl.addEventListener('pointerdown', (e) => { if (e.target === fbEl) closeFeedback(); });
+document.getElementById('fbSend').addEventListener('click', () => {
+  if (!fbText.value.trim()) { fbMsg.textContent = 'Please write a short message first.'; fbText.focus(); return; }
+  const label = { Bug: 'bug', Idea: 'idea', Balance: 'balance', Other: 'feedback' }[fbType];
+  const url = `https://github.com/${FEEDBACK_REPO}/issues/new?` + new URLSearchParams({ title: feedbackTitle(), body: feedbackText(), labels: label }).toString();
+  window.open(url, '_blank', 'noopener');
+  fbMsg.textContent = 'Opened GitHub in a new tab — press “Submit new issue” there. Thanks!';
+});
+document.getElementById('fbCopy').addEventListener('click', async () => {
+  const text = feedbackTitle() + '\n\n' + feedbackText();
+  try { await navigator.clipboard.writeText(text); fbMsg.textContent = 'Copied! Paste it anywhere to send it.'; }
+  catch (e) { fbText.select(); fbMsg.textContent = 'Could not copy automatically — select the text and copy it yourself.'; }
+});
+function updateFeedbackButton() {
+  const show = !fbOpen && (['menu', 'over', 'loading'].includes(state) || paused);
+  if (fbBtn.hidden === show) fbBtn.hidden = !show;
+}
+
 // ================= CONTROL =================
 const keys = {}; let mouseDown = false, specialQ = false, dodgeQ = false;
 const mouse = new THREE.Vector2(), ray = new THREE.Raycaster(), aimPlane = new THREE.Plane(v3(0, 1, 0), -1.35), aimPt = v3();
 addEventListener('keydown', (e) => {
+  if (fbOpen) { if (e.code === 'Escape') closeFeedback(); return; }
+  if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
   keys[e.code] = true;
   if (e.code === 'KeyE') specialQ = true;
   if (e.code === 'Space') { dodgeQ = true; e.preventDefault(); if (state === 'intro') skipIntro = true; }
@@ -1086,7 +1191,7 @@ addEventListener('keydown', (e) => {
 addEventListener('keyup', (e) => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; });
 addEventListener('pointermove', (e) => { mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); });
-addEventListener('pointerdown', (e) => { initAudio(); if (state === 'intro') skipIntro = true; if (e.button === 0) mouseDown = true; if (e.button === 2) specialQ = true; });
+addEventListener('pointerdown', (e) => { if (fbOpen || e.target.closest('#fbBtn')) return; initAudio(); if (state === 'intro') skipIntro = true; if (e.button === 0) mouseDown = true; if (e.button === 2) specialQ = true; });
 addEventListener('pointerup', (e) => { if (e.button === 0) mouseDown = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -1386,6 +1491,7 @@ function frame() {
   const raw = clock.getDelta();
   const rdt = Math.min(raw, 1 / 15); // don't turn low frame rates into slow motion
   if (!paused) advance(rdt);
+  updateFeedbackButton();
   if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera);
   // auto quality: if the last ~2 seconds of a fight averaged under ~45 fps, step down one level
   if (state === 'play' && !paused && raw < 0.1 && document.visibilityState === 'visible') {

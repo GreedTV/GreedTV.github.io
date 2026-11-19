@@ -19,6 +19,11 @@ into the water, or hold more ground when time runs out. Win 2 rounds to win the 
 | M | Mute |
 | G | Graphics quality (Low / Medium / High) |
 
+## Feedback
+
+Use the **💬 Feedback** button (menu, pause screen or end screen). It opens a pre-filled issue
+in this repository's [Issues](../../issues) tab, labelled `bug`, `idea`, `balance` or `feedback`.
+
 ## Run it locally
 
 The game loads 3D model files, so it needs to be served over HTTP (opening `index.html` directly won't work):
