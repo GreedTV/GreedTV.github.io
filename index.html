@@ -99,6 +99,11 @@
   .cgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
   .cgrid div { background: #070b18; border-radius: 8px; padding: 10px; text-align: center; }
   .cgrid b { display: block; font-size: 22px; } .cgrid span { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .achs { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+  .ach { background: #070b18; border-radius: 8px; padding: 7px 8px; display: flex; gap: 8px; align-items: center; font-size: 12px; line-height: 1.25; }
+  .ach .i { font-size: 20px; } .ach b { display: block; font-size: 12px; } .ach small { color: var(--muted); font-size: 10.5px; }
+  .ach.locked { opacity: .38; filter: grayscale(1); }
+  #endXp .newach { text-align: center; font-weight: 800; color: #7dff9a; }
   #endXp { width: min(420px, 92vw); display: flex; flex-direction: column; gap: 6px; }
   #endXp .gain { text-align: center; font-weight: 800; color: var(--gold); }
   #endXp .up { text-align: center; font-weight: 900; color: #fff; text-shadow: 0 0 12px var(--gold); letter-spacing: 2px; }
@@ -134,6 +139,15 @@
   .how { margin: 0; padding-left: 20px; line-height: 1.55; font-size: 14px; color: #d6dcf0; }
   .how li { margin-bottom: 6px; } .how b { color: var(--gold); }
   .howkeys { font-size: 13px; color: var(--muted); line-height: 1.9; background: #070b18; border-radius: 8px; padding: 10px 12px; }
+  /* player 2 panel */
+  #p2hud { position: absolute; right: 18px; bottom: 22px; background: var(--panel); border: 2px solid rgba(120,255,150,.4); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; min-width: 190px; }
+  #p2hud .p2top { display: flex; gap: 8px; align-items: center; font-weight: 700; } #p2hud .p2top b { color: #7dff9a; font-size: 14px; }
+  #p2hud .p2row { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  #p2hud .bar { flex: 1; height: 7px; background: rgba(0,0,0,.6); border-radius: 4px; overflow: hidden; } #p2hud .bar i { display: block; height: 100%; width: 0; background: var(--gold); }
+  #p2hud .p2cds { display: flex; gap: 4px; }
+  #p2hud .p2cds i { flex: 1; text-align: center; font-style: normal; font-weight: 800; font-size: 10px; padding: 3px 0; border-radius: 4px; background: rgba(255,255,255,.08); color: var(--muted); }
+  #p2hud .p2cds i.ready { background: rgba(125,255,154,.25); color: #fff; } #p2hud .p2cds i.ult.ready { background: rgba(255,213,74,.5); }
+  body.twoplayer #help { display: none; }
   /* own strain meter */
   #myStrain { position: absolute; bottom: 96px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; background: var(--panel); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--muted); }
   #myStrain .bar { width: 120px; height: 8px; background: rgba(0,0,0,.6); border-radius: 4px; overflow: hidden; }
@@ -218,6 +232,11 @@
     <div class="team red"><span id="winsR" class="pips"></span><span class="tname">RED</span></div>
   </div>
   <div id="terr"></div>
+  <div id="p2hud" class="hidden">
+    <div class="p2top"><b>P2</b><span id="p2el"></span></div>
+    <div class="p2row"><span>Strain</span><div class="bar"><i id="p2strain"></i></div></div>
+    <div class="p2cds"><i data-k="p">ATK</i><i data-k="s">SPC</i><i data-k="d">DDG</i><i data-k="u">ULT</i></div>
+  </div>
   <div id="myStrain"><span>Your strain</span><div class="bar"><i></i></div><b>0%</b></div>
   <div id="abilities">
     <div class="ab" id="abP"><div class="fill"></div><b>Attack</b><small>Left click</small></div>
@@ -240,6 +259,8 @@
   <div class="menuBottom">
     <div id="loading">Loading fighters…</div>
     <div id="picker" class="hidden">
+      <div class="pk"><span>Players</span><button data-mode="solo">Solo</button><button data-mode="coop">2P Co-op</button><button data-mode="vs">2P Versus</button></div>
+      <div class="pk hidden" id="p2hint" style="font-size:12px;color:var(--muted)">Player 2: a controller, or <b style="color:var(--text)">arrow keys</b> + <b style="color:var(--text)">Enter</b> attack · <b style="color:var(--text)">Right Shift</b> special · <b style="color:var(--text)">Right Ctrl</b> dodge · <b style="color:var(--text)">/</b> ultimate</div>
       <div class="pk"><span>Arena</span><button data-arena="night">Night</button><button data-arena="sunset">Sunset</button><button data-arena="day">Day</button><button data-arena="random">🎲</button></div>
       <div class="pk"><span>Difficulty</span><button data-diff="easy">Easy</button><button data-diff="normal">Normal</button><button data-diff="hard">Hard</button></div>
       <div class="pk"><span>Body</span><button data-body="male">Male</button><button data-body="female">Female</button></div>
@@ -305,6 +326,8 @@
     <h2 id="carTitle">Your career</h2>
     <div class="lvl"><b id="cLv">Level 1</b><div class="xpbar"><i id="cXpBar"></i></div><small id="cXpTxt"></small></div>
     <div class="cgrid" id="cGrid"></div>
+    <label style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Achievements <span id="cAchCount"></span></label>
+    <div class="achs" id="cAch"></div>
     <p class="note" style="margin:0;font-size:12px;color:var(--muted)">Saved in this browser. Earn XP every match: more for winning, knock-outs, hits and harder difficulty.</p>
     <div class="actions" style="gap:8px"><button type="button" class="btn ghost" id="cReset">Reset</button><button type="button" class="btn" id="cClose">Close</button></div>
   </div>
@@ -1084,18 +1107,20 @@ function updateAnim(m, dt) {
 
 const labelsEl = document.getElementById('labels');
 let fighters = [], human = null;
-function makeFighter(team, el, slot, isHuman, look) {
+function makeFighter(team, el, slot, isHuman, look, isP2 = false) {
   const mesh = makeFighterMesh(team, el, look); scene.add(mesh.root);
-  if (isHuman) {
-    const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.38, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.4, 0.6) }));
+  if (isHuman || isP2) {
+    // marker over player-controlled fighters: gold for P1, green for P2
+    const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.38, 4), new THREE.MeshBasicMaterial({ color: isP2 ? new THREE.Color(0.6, 3, 0.9) : new THREE.Color(3, 2.4, 0.6) }));
     arrow.rotation.x = Math.PI; arrow.position.y = 2.8; mesh.root.add(arrow); mesh.arrow = arrow;
   }
   const label = document.createElement('div'); label.className = 'lbl';
-  label.innerHTML = `<span style="color:${ELEMENTS[el].css}">${isHuman ? 'YOU · ' : ''}${ELEMENTS[el].name.toUpperCase()}</span><div class="bar"><i></i></div>`;
+  const tag = isP2 ? 'P2 · ' : isHuman ? (playerMode === 'solo' ? 'YOU · ' : 'P1 · ') : '';
+  label.innerHTML = `<span style="color:${ELEMENTS[el].css}">${tag}${ELEMENTS[el].name.toUpperCase()}</span><div class="bar"><i></i></div>`;
   label.style.borderBottom = `2px solid ${TEAM[team].css}`;
   labelsEl.appendChild(label);
   return {
-    team, el, slot, human: isHuman, side: TEAM[team].side, mesh, label, bar: label.querySelector('i'),
+    team, el, slot, human: isHuman, p2: isP2, side: TEAM[team].side, mesh, label, bar: label.querySelector('i'),
     pos: v3(), mv: v3(), kb: v3(), want: v3(), facing: v3(-TEAM[team].side, 0, 0), dodgeDir: v3(),
     vy: 0, strain: 0, line: 0, out: false, falling: false, cd: { p: 0, s: 0, d: 0 },
     dodgeT: 0, stunT: 0, flashT: 0, punchIdx: 0, auraT: Math.random() * 0.2,
@@ -1104,7 +1129,7 @@ function makeFighter(team, el, slot, isHuman, look) {
   };
 }
 const active = (f) => !f.out && !f.falling;
-const fighterName = (f) => f.human ? 'You' : `${TEAM[f.team].name} ${ELEMENTS[f.el].name}`;
+const fighterName = (f) => f.p2 ? 'Player 2' : f.human ? (playerMode === 'solo' ? 'You' : 'Player 1') : `${TEAM[f.team].name} ${ELEMENTS[f.el].name}`;
 const depthOf = (f) => f.side * f.pos.x;
 
 // ================= GAME STATE =================
@@ -1123,6 +1148,8 @@ const DIFFS = {
   normal: { name: 'Normal', skill: [0.55, 0.9],  dodge: 0.3,  aggr: 1 },
   hard:   { name: 'Hard',   skill: [0.85, 1.05], dodge: 0.55, aggr: 0.65 },
 };
+let playerMode = 'solo', p2 = null, roundLog = [];
+try { const m = localStorage.getItem('aoe-mode'); if (['solo', 'coop', 'vs'].includes(m)) playerMode = m; } catch (e) {}
 let difficulty = 'normal';
 try { const d = localStorage.getItem('aoe-diff'); if (DIFFS[d]) difficulty = d; } catch (e) {}
 const lookKey = (l) => l.body + l.hair + '-' + l.hairColor + '-' + l.outfit;
@@ -1139,6 +1166,8 @@ function renderPicker() {
   document.querySelectorAll('[data-body]').forEach(b => b.classList.toggle('on', b.dataset.body === playerLook.body));
   document.querySelectorAll('[data-diff]').forEach(b => b.classList.toggle('on', b.dataset.diff === difficulty));
   document.querySelectorAll('[data-arena]').forEach(b => b.classList.toggle('on', b.dataset.arena === arenaChoice));
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === playerMode));
+  document.getElementById('p2hint').classList.toggle('hidden', playerMode === 'solo');
   const st = HAIR_STYLES[playerLook.body];
   playerLook.hair = ((playerLook.hair % st.length) + st.length) % st.length;
   document.getElementById('hairName').textContent = st[playerLook.hair].name;
@@ -1148,6 +1177,9 @@ function renderPicker() {
 }
 function lookChanged() { try { localStorage.setItem('aoe-look', JSON.stringify(playerLook)); } catch (e) {} renderPicker(); rebuildPreview(); }
 document.querySelectorAll('[data-body]').forEach(b => b.addEventListener('click', () => { if (playerLook.body !== b.dataset.body) { playerLook.body = b.dataset.body; playerLook.hair = 0; lookChanged(); } }));
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+  playerMode = b.dataset.mode; try { localStorage.setItem('aoe-mode', playerMode); } catch (e) {} renderPicker();
+}));
 document.querySelectorAll('[data-arena]').forEach(b => b.addEventListener('click', () => {
   arenaChoice = b.dataset.arena; try { localStorage.setItem('aoe-arena', arenaChoice); } catch (e) {}
   applyTheme(arenaChoice === 'random' ? Object.keys(THEMES)[(Math.random() * 3) | 0] : arenaChoice); renderPicker();
@@ -1164,7 +1196,8 @@ document.getElementById('swatches').addEventListener('click', (e) => { const i =
 
 function clearMatch() {
   for (const f of fighters) { scene.remove(f.mesh.root); f.label.remove(); }
-  fighters = []; human = null; clearProjectiles();
+  fighters = []; human = null; p2 = null; clearProjectiles();
+  document.getElementById('p2hud').classList.add('hidden');
 }
 function clearProjectiles() {
   for (const p of projectiles) scene.remove(p.mesh);
@@ -1181,14 +1214,20 @@ function startMatch(el) {
   removePreview();
   applyTheme(arenaChoice === 'random' ? Object.keys(THEMES)[(Math.random() * 3) | 0] : arenaChoice);
   const used = new Set([lookKey(playerLook)]);
+  // Solo: you + 2 computer teammates. Co-op: Player 2 takes blue slot 2. Versus: Player 2 leads the red team (middle slot).
+  const coop = playerMode === 'coop', vs = playerMode === 'vs';
   fighters.push(makeFighter(0, blue[0], 1, true, playerLook),
-    makeFighter(0, blue[1], 0, false, randomLook(blue[1], 0, used)), makeFighter(0, blue[2], 2, false, randomLook(blue[2], 0, used)));
-  red.forEach((e, i) => fighters.push(makeFighter(1, e, i, false, randomLook(e, 1, used))));
-  const D = DIFFS[difficulty];
+    makeFighter(0, blue[1], 0, false, randomLook(blue[1], 0, used)), makeFighter(0, blue[2], 2, false, randomLook(blue[2], 0, used), coop));
+  red.forEach((e, i) => fighters.push(makeFighter(1, e, i, false, randomLook(e, 1, used), vs && i === 1)));
+  const D = DIFFS[vs ? 'normal' : difficulty]; // in Versus, Player 2's computer teammates play at Normal
   for (const f of fighters) if (f.team === 1) {
     f.ai.skill = D.skill[0] + Math.random() * (D.skill[1] - D.skill[0]); f.ai.dodge = D.dodge; f.ai.aggr = D.aggr;
   }
   human = fighters[0];
+  p2 = fighters.find(f => f.p2) || null;
+  roundLog = [];
+  document.getElementById('p2hud').classList.toggle('hidden', !p2);
+  if (p2) document.getElementById('p2el').innerHTML = `<span style="color:${ELEMENTS[p2.el].css}">${ELEMENTS[p2.el].icon} ${ELEMENTS[p2.el].name}</span> · ${TEAM[p2.team].name}`;
   wins = [0, 0]; round = 1;
   document.getElementById('menu').classList.add('hidden');
   document.getElementById('end').classList.add('hidden');
@@ -1621,8 +1660,47 @@ let padMode = false, padPrev = [], padAxisLatch = 0;
 const pad = { mx: 0, my: 0, ax: 0, ay: 0, atk: false };
 addEventListener('gamepadconnected', () => toast('🎮 Controller connected'));
 const dz = (v) => Math.abs(v) < 0.2 ? 0 : v;
+const getPads = () => navigator.getGamepads ? [...navigator.getGamepads()].filter(p => p && p.connected) : [];
+// In 2-player modes: with two controllers P1 gets the first and P2 the second;
+// with one controller it belongs to Player 2 (Player 1 uses keyboard + mouse).
+function p1Pad() { const pads = getPads(); if (playerMode !== 'solo' && pads.length < 2 && state !== 'menu' && state !== 'over') return null; return pads[0] || null; }
+function p2Pad() { const pads = getPads(); return pads.length >= 2 ? pads[1] : pads[0] || null; }
+// ---- Player 2 input (controller, or arrow keys + Enter / Right Shift / Right Ctrl / "/") ----
+const p2in = { mx: 0, my: 0, ax: 0, ay: 0, atk: false, spcQ: false, ddgQ: false, ultQ: false };
+let p2Prev = [];
+function pollP2() {
+  const gp = p2 ? p2Pad() : null;
+  let mx = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), my = (keys.ArrowDown ? 1 : 0) - (keys.ArrowUp ? 1 : 0);
+  let atk = !!(keys.Enter || keys.NumpadEnter || keys.Numpad0);
+  p2in.ax = p2in.ay = 0;
+  if (gp) {
+    const btn = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed), press = (i) => btn(i) && !p2Prev[i];
+    if (Math.abs(dz(gp.axes[0] || 0)) + Math.abs(dz(gp.axes[1] || 0)) > 0) { mx = dz(gp.axes[0]); my = dz(gp.axes[1]); }
+    p2in.ax = dz(gp.axes[2] || 0); p2in.ay = dz(gp.axes[3] || 0);
+    atk = atk || btn(7) || btn(0);
+    if (press(1) || press(5)) p2in.spcQ = true;
+    if (press(2) || press(4)) p2in.ddgQ = true;
+    if (press(3)) p2in.ultQ = true;
+    if (press(9) && ['play', 'countdown', 'intro', 'roundEnd'].includes(state)) setPaused(!paused);
+    p2Prev = gp.buttons.map(b => b.pressed);
+  }
+  p2in.mx = mx; p2in.my = my; p2in.atk = atk;
+}
+// screen-relative directions for the 2-player side camera: up on screen = -Z, right = +X
+function controlP2(f) {
+  f.want.set(p2in.mx, 0, p2in.my); if (f.want.lengthSq() > 1) f.want.normalize();
+  const dir = v3(-f.side, 0, 0), t = nearestEnemy(f);
+  if (Math.hypot(p2in.ax, p2in.ay) > 0.4) dir.set(p2in.ax, 0, p2in.ay).normalize();
+  else if (t) { const d = t.pos.clone().addScaledVector(t.mv, t.pos.distanceTo(f.pos) / ELEMENTS[f.el].primary.speed * 0.6).sub(f.pos); d.y = 0; if (d.lengthSq() > 0.01) dir.copy(d.normalize()); }
+  f.facing.copy(dir);
+  if (p2in.atk) attack(f, dir);
+  if (p2in.spcQ) doSpecial(f, dir);
+  if (p2in.ddgQ) dodge(f, f.want.lengthSq() > 0.01 ? f.want : v3(0, 0, f.pos.z > 0 ? -1 : 1));
+  if (p2in.ultQ) useUlt(f, dir);
+  p2in.spcQ = p2in.ddgQ = p2in.ultQ = false;
+}
 function pollPad() {
-  const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(p => p && p.connected) : null;
+  const gp = p1Pad();
   if (!gp) { pad.atk = false; pad.mx = pad.my = 0; return; }
   const btn = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed);
   const press = (i) => btn(i) && !padPrev[i];
@@ -1672,6 +1750,7 @@ function updateTopUI(raw) {
   const showTouch = touchMode && inMatch && !paused && !anyModal();
   touchEl.classList.toggle('hidden', !showTouch);
   document.body.classList.toggle('touchmode', touchMode);
+  document.body.classList.toggle('twoplayer', !!p2 && inMatch);
   fpsEl.classList.toggle('hidden', !settings.fps);
   if (settings.fps) { fpsFrames++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = `${Math.round(fpsFrames / fpsT)} FPS · ${QUALITY[qIdx].name}`; fpsT = 0; fpsFrames = 0; } }
 }
@@ -1688,6 +1767,12 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyE') specialQ = true;
   if (e.code === 'KeyQ') ultQ = true;
   if (e.code === 'Space') { dodgeQ = true; e.preventDefault(); if (state === 'intro') skipIntro = true; }
+  if (p2) {
+    if (e.code === 'ShiftRight' || e.code === 'Numpad1') p2in.spcQ = true;
+    if (e.code === 'ControlRight' || e.code === 'Numpad2') p2in.ddgQ = true;
+    if (e.code === 'Slash' || e.code === 'Numpad3') p2in.ultQ = true;
+    if (/^Arrow/.test(e.code)) e.preventDefault();
+  }
   if (e.code === 'KeyM') toggleMute();
   if (e.code === 'KeyG') { qIdx = (qIdx + 1) % QUALITY.length; applyQuality(true); }
   if ((e.code === 'KeyP' || e.code === 'Escape') && !['menu', 'over', 'loading'].includes(state) && !anyModal()) setPaused(!paused);
@@ -1704,12 +1789,13 @@ addEventListener('pointerup', (e) => { if (e.button === 0) mouseDown = false; })
 addEventListener('contextmenu', (e) => e.preventDefault());
 
 function controlHuman(f) {
-  const fwd = -f.side;
+  const fwd = -f.side, side2p = playerMode !== 'solo'; // 2-player modes use a side camera: screen-relative controls
   if (touchMode || padMode) {
-    if (padMode) f.want.set(fwd * -pad.my, 0, pad.mx); else f.want.set(fwd * touch.y, 0, touch.x);
+    if (padMode) { if (side2p) f.want.set(pad.mx, 0, pad.my); else f.want.set(fwd * -pad.my, 0, pad.mx); }
+    else f.want.set(fwd * touch.y, 0, touch.x);
     if (f.want.lengthSq() > 1) f.want.normalize();
     const t = nearestEnemy(f), dir = v3(-f.side, 0, 0);
-    if (padMode && Math.hypot(pad.ax, pad.ay) > 0.4) dir.set(fwd * -pad.ay, 0, pad.ax).normalize(); // right stick aims
+    if (padMode && Math.hypot(pad.ax, pad.ay) > 0.4) { if (side2p) dir.set(pad.ax, 0, pad.ay).normalize(); else dir.set(fwd * -pad.ay, 0, pad.ax).normalize(); } // right stick aims
     else if (t) { const d = t.pos.clone().addScaledVector(t.mv, t.pos.distanceTo(f.pos) / ELEMENTS[f.el].primary.speed * 0.6).sub(f.pos); d.y = 0; if (d.lengthSq() > 0.01) dir.copy(d.normalize()); }
     f.facing.copy(dir);
     if (touch.atk || pad.atk) attack(f, dir);
@@ -1719,7 +1805,8 @@ function controlHuman(f) {
     return;
   }
   const ws = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), ad = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
-  f.want.set(fwd * ws, 0, ad); if (f.want.lengthSq() > 1) f.want.normalize();
+  if (side2p) f.want.set(ad, 0, -ws); else f.want.set(fwd * ws, 0, ad);
+  if (f.want.lengthSq() > 1) f.want.normalize();
   ray.setFromCamera(mouse, camera);
   const dir = v3(-f.side, 0, 0);
   if (ray.ray.intersectPlane(aimPlane, aimPt)) { const d = aimPt.clone().sub(f.pos); d.y = 0; if (d.lengthSq() > 0.25) dir.copy(d.normalize()); }
@@ -1738,13 +1825,16 @@ function controlAI(f, dt) {
   ai.think -= dt;
   if (ai.think <= 0 || !ai.target || !active(ai.target)) {
     ai.think = 0.6 + Math.random() * 0.9;
-    enemies.sort((a, b) => a.pos.distanceToSquared(f.pos) - b.pos.distanceToSquared(f.pos));
-    ai.target = Math.random() < 0.65 ? enemies[0] : enemies[(Math.random() * enemies.length) | 0];
+    // prefer targets that are close, already strained, and near their own back edge (easiest to knock out)
+    const score = (e) => e.pos.distanceTo(f.pos) - e.strain * 0.05 - Math.max(0, depthOf(e) - 8) * 0.6;
+    enemies.sort((a, b) => score(a) - score(b));
+    ai.target = Math.random() < 0.7 ? enemies[0] : enemies[(Math.random() * enemies.length) | 0];
     ai.strafe = [-1, 0, 1][(Math.random() * 3) | 0];
     ai.depthOff = PREF_DEPTH[f.el] + Math.random() * 1.5;
   }
   const minD = Math.max(F[f.team], f.line);
-  const wantD = Math.min(12, minD + ai.depthOff), d = depthOf(f);
+  let wantD = Math.min(12, minD + ai.depthOff); const d = depthOf(f);
+  if (f.strain > 60 && d > 8.5) wantD = minD + 0.4; // heavily strained and near the edge: step forward to safety
   if (Math.abs(f.pos.z) > HALF_W - 1.6) ai.strafe = -Math.sign(f.pos.z);
   const wx = Math.abs(wantD - d) < 0.3 ? 0 : THREE.MathUtils.clamp((wantD - d) * 0.8, -1, 1);
   f.want.set(f.side * wx, 0, ai.strafe * 0.8);
@@ -1779,7 +1869,7 @@ function controlAI(f, dt) {
       const pp = rel.clone().sub(vdir.clone().multiplyScalar(rel.dot(vdir)));
       if (pp.length() > p.r + FR + 0.3) continue;
       p.seen.add(f);
-      if (Math.random() < ai.dodge) {
+      if (Math.random() < ai.dodge + (f.strain / 160) * 0.3 + (depthOf(f) > 10 ? 0.15 : 0)) { // dodge more when in danger
         const side = v3(-vdir.z, 0, vdir.x); if (side.dot(pp) < 0) side.negate();
         if (Math.abs(f.pos.z + side.z * 3) > HALF_W - 1) side.negate();
         dodge(f, side);
@@ -1899,6 +1989,7 @@ function checkZones() {
 function endRound(winner, reason) {
   state = 'roundEnd'; stateT = 3.6; horn(); roundWinner = winner;
   if (winner >= 0) {
+    roundLog.push(winner);
     wins[winner]++; announce(`${TEAM[winner].name.toUpperCase()} WINS THE ROUND`, TEAM[winner].css);
     if (wins[winner] < WIN_ROUNDS) setTimeout(() => say(`${TEAM[winner].name} takes the round!`), 700);
   } else { announce('DRAW ROUND', '#fff'); say('Draw!'); }
@@ -1923,7 +2014,7 @@ function showEnd() {
   const won = wins[0] > wins[1];
   roundWinner = won ? 0 : 1;
   for (const f of fighters) { if (!f.out) continue; f.out = false; f.falling = false; f.pos.set(f.side * 3, 0, (f.slot - 1) * 4.5); f.mesh.root.visible = true; f.mesh.root.rotation.set(0, 0, 0); }
-  document.getElementById('endTitle').textContent = won ? 'VICTORY' : 'DEFEAT';
+  document.getElementById('endTitle').textContent = playerMode === 'vs' ? (won ? 'PLAYER 1 WINS' : 'PLAYER 2 WINS') : won ? 'VICTORY' : 'DEFEAT';
   document.getElementById('endSub').textContent = `Blue ${wins[0]} – ${wins[1]} Red · ${DIFFS[difficulty].name}`;
   // match stats + MVP (knock-outs count most, then hits; falling out costs a little)
   const score = (f) => f.stats.kos * 3 + f.stats.hits * 0.2 - f.stats.outs;
@@ -1938,7 +2029,8 @@ function showEnd() {
     endXp.innerHTML = `<div class="gain">+${rec.xp} XP</div>
       <div class="lvl"><b>Level ${L.lvl}</b><div class="xpbar"><i style="width:${(L.into / L.need) * 100}%"></i></div><small>${L.into} / ${L.need}</small></div>
       ${rec.after > rec.before ? `<div class="up">⭐ LEVEL UP! ⭐</div>` : ''}
-      ${career.streak >= 2 ? `<div class="gain" style="color:#ff9a3d">🔥 ${career.streak} wins in a row</div>` : ''}`;
+      ${career.streak >= 2 ? `<div class="gain" style="color:#ff9a3d">🔥 ${career.streak} wins in a row</div>` : ''}
+      ${rec.fresh.map(a => `<div class="newach">🏆 Achievement unlocked: ${a.icon} ${a.name}</div>`).join('')}`;
   } else endXp.innerHTML = '';
   document.getElementById('endStats').innerHTML = `<table><thead><tr><th>Fighter</th><th>Hits</th><th>Knock-outs</th><th>Fell out</th></tr></thead><tbody>${rows}</tbody></table>`;
   document.getElementById('end').classList.remove('hidden');
@@ -1978,6 +2070,9 @@ document.querySelectorAll('.card').forEach(c => {
 });
 const abEls = { p: document.getElementById('abP'), s: document.getElementById('abS'), d: document.getElementById('abD'), u: document.getElementById('abU') };
 const tUltEl = document.getElementById('tUlt');
+const p2Cds = Object.fromEntries([...document.querySelectorAll('#p2hud .p2cds i')].map(i => [i.dataset.k, i]));
+p2Cds.u.classList.add('ult');
+const p2StrainEl = document.getElementById('p2strain');
 // floating hit numbers ("+8%", "KO!") over fighters you hit
 const floats = [];
 function spawnFloat(text, target, color, big = false) {
@@ -1999,22 +2094,53 @@ const timerEl = document.getElementById('timer');
 const touchCd = { p: document.querySelector('#tAtk .cd'), s: document.querySelector('#tSpc .cd'), d: document.querySelector('#tDdg .cd'), u: document.querySelector('#tUlt .cd') };
 const myStrainBar = document.querySelector('#myStrain i'), myStrainTxt = document.querySelector('#myStrain b');
 // ---- career + XP levels (saved in this browser) ----
-const CAREER0 = { matches: 0, wins: 0, losses: 0, kos: 0, hits: 0, outs: 0, streak: 0, bestStreak: 0, xp: 0, ultimates: 0 };
-const career = { ...CAREER0 };
+const CAREER0 = { matches: 0, wins: 0, losses: 0, kos: 0, hits: 0, outs: 0, streak: 0, bestStreak: 0, xp: 0, ultimates: 0, ach: {}, elemWins: {} };
+const freshCareer = () => JSON.parse(JSON.stringify(CAREER0));
+const career = freshCareer();
 try { Object.assign(career, JSON.parse(localStorage.getItem('aoe-career')) || {}); } catch (e) {}
 function saveCareer() { try { localStorage.setItem('aoe-career', JSON.stringify(career)); } catch (e) {} }
 function levelInfo(xp) { let lvl = 1, need = 200, rem = xp; while (rem >= need) { rem -= need; lvl++; need = 200 + (lvl - 1) * 75; } return { lvl, into: rem, need }; }
 function renderCareerChip() { document.getElementById('carLv').textContent = `Lv ${levelInfo(career.xp).lvl}`; }
+const ACH = [
+  { id: 'first', icon: '🥇', name: 'First Win', desc: 'Win a match' },
+  { id: 'hat', icon: '🎩', name: 'Hat Trick', desc: '3 knock-outs in one match' },
+  { id: 'untouch', icon: '🛡️', name: 'Untouchable', desc: 'Win without falling out once' },
+  { id: 'comeback', icon: '🔄', name: 'Comeback', desc: 'Win after losing round 1' },
+  { id: 'hard', icon: '💀', name: 'Hard Mode', desc: 'Win a solo match on Hard' },
+  { id: 'all4', icon: '🌈', name: 'Master of All', desc: 'Win with every element' },
+  { id: 'ult10', icon: '⚡', name: 'Unleashed', desc: 'Use 10 ultimates' },
+  { id: 'streak3', icon: '🔥', name: 'On Fire', desc: 'Win 3 matches in a row' },
+  { id: 'hits1000', icon: '👊', name: 'Heavy Hitter', desc: 'Land 1,000 hits' },
+  { id: 'lvl5', icon: '⭐', name: 'Rising Star', desc: 'Reach level 5' },
+  { id: 'lvl10', icon: '🌟', name: 'Champion', desc: 'Reach level 10' },
+  { id: 'coop', icon: '🤝', name: 'Team Player', desc: 'Win a 2P co-op match' },
+];
+function checkAchievements(won) {
+  career.ach = career.ach || {};
+  const s = human.stats, lvl = levelInfo(career.xp).lvl;
+  const test = {
+    first: won, hat: s.kos >= 3, untouch: won && s.outs === 0, comeback: won && roundLog[0] === 1,
+    hard: won && difficulty === 'hard' && playerMode === 'solo', all4: ORDER.every(e => (career.elemWins || {})[e] > 0),
+    ult10: career.ultimates >= 10, streak3: career.streak >= 3, hits1000: career.hits >= 1000,
+    lvl5: lvl >= 5, lvl10: lvl >= 10, coop: won && playerMode === 'coop',
+  };
+  const fresh = ACH.filter(a => test[a.id] && !career.ach[a.id]);
+  for (const a of fresh) career.ach[a.id] = Date.now();
+  return fresh;
+}
 function recordMatch(won) {
   if (!human || !human.human) return null; // only real player matches count
-  const s = human.stats, mult = { easy: 0.75, normal: 1, hard: 1.5 }[difficulty];
+  const s = human.stats, mult = { easy: 0.75, normal: 1, hard: 1.5 }[playerMode === 'vs' ? 'normal' : difficulty];
+  if (won) { career.elemWins = career.elemWins || {}; career.elemWins[human.el] = (career.elemWins[human.el] || 0) + 1; }
   const xp = Math.round((50 + (won ? 100 : 0) + s.kos * 25 + s.hits * 2) * mult);
   const before = levelInfo(career.xp).lvl;
   career.matches++; if (won) career.wins++; else career.losses++;
   career.kos += s.kos; career.hits += s.hits; career.outs += s.outs;
   career.streak = won ? career.streak + 1 : 0; career.bestStreak = Math.max(career.bestStreak, career.streak);
-  career.xp += xp; saveCareer(); renderCareerChip();
-  return { xp, before, after: levelInfo(career.xp).lvl };
+  career.xp += xp;
+  const fresh = checkAchievements(won);
+  saveCareer(); renderCareerChip();
+  return { xp, before, after: levelInfo(career.xp).lvl, fresh };
 }
 const carEl = document.getElementById('career');
 function renderCareer() {
@@ -2026,11 +2152,14 @@ function renderCareer() {
   const items = [['Matches', career.matches], ['Wins', career.wins], ['Win rate', rate], ['Knock-outs', career.kos],
     ['Hits', career.hits], ['Ultimates', career.ultimates], ['Win streak', career.streak], ['Best streak', career.bestStreak]];
   document.getElementById('cGrid').innerHTML = items.map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
+  const got = career.ach || {};
+  document.getElementById('cAchCount').textContent = `(${ACH.filter(a => got[a.id]).length}/${ACH.length})`;
+  document.getElementById('cAch').innerHTML = ACH.map(a => `<div class="ach ${got[a.id] ? '' : 'locked'}"><span class="i">${a.icon}</span><div><b>${a.name}</b><small>${a.desc}</small></div></div>`).join('');
 }
 document.getElementById('carBtn').addEventListener('click', () => { renderCareer(); openModal(carEl); });
 document.getElementById('cClose').addEventListener('click', () => closeModal(carEl));
 document.getElementById('cReset').addEventListener('click', () => {
-  if (confirm('Reset your career stats and level? This cannot be undone.')) { Object.assign(career, CAREER0); saveCareer(); renderCareer(); renderCareerChip(); }
+  if (confirm('Reset your career stats and level? This cannot be undone.')) { Object.assign(career, freshCareer()); saveCareer(); renderCareer(); renderCareerChip(); }
 });
 carEl.addEventListener('pointerdown', (e) => { if (e.target === carEl) closeModal(carEl); });
 renderCareerChip();
@@ -2075,6 +2204,13 @@ function updateHUD() {
       abEls[k].classList.toggle('ready', frac <= 0);
       touchCd[k].style.height = `${frac * 100}%`;
     }
+    if (p2) {
+      const E2 = ELEMENTS[p2.el], mx2 = { p: E2.primary.cd, s: E2.special.cd, d: 1.1 };
+      for (const k of ['p', 's', 'd']) p2Cds[k].classList.toggle('ready', p2.cd[k] <= 0 && active(p2));
+      p2Cds.u.classList.toggle('ready', p2.ult >= 100 && active(p2)); p2Cds.u.textContent = p2.ult >= 100 ? 'ULT!' : `${Math.floor(p2.ult)}%`;
+      const s2 = Math.min(1, p2.strain / 160); p2StrainEl.style.width = `${s2 * 100}%`;
+      p2StrainEl.style.background = s2 < 0.35 ? '#ffd54a' : s2 < 0.7 ? '#ff9a3d' : '#ff3b3b';
+    }
     const uf = 1 - human.ult / 100, uReady = human.ult >= 100 && active(human);
     abEls.u.querySelector('.fill').style.height = `${uf * 100}%`; abEls.u.classList.toggle('ready', uReady);
     touchCd.u.style.height = `${uf * 100}%`; tUltEl.classList.toggle('ready', uReady);
@@ -2111,6 +2247,12 @@ function updateCamera(rdt) {
     const e = ease(1 - stateT / INTRO_TIME), a = THREE.MathUtils.lerp(0.25, 0.97, e) * Math.PI;
     const R = THREE.MathUtils.lerp(30, 19, e), h = THREE.MathUtils.lerp(17, 9, e);
     camTarget.set(Math.cos(a) * R, h, Math.sin(a) * R); camLook.set(0, 1, 0); k = 1 - Math.exp(-8 * rdt);
+  } else if (p2 && state !== 'intro') {
+    // 2 players: wide side view that follows the middle of the action
+    let cx = 0, n = 0; for (const f of fighters) if (active(f)) { cx += f.pos.x; n++; }
+    cx = THREE.MathUtils.clamp(n ? cx / n : 0, -5, 5);
+    if (portrait) { camTarget.set(cx, 26, 30); camLook.set(cx, 0, -1); } else { camTarget.set(cx, 18, 24); camLook.set(cx, 0, -1.5); }
+    if (state === 'countdown') k = 1 - Math.exp(-3 * rdt);
   } else if (human && active(human)) {
     if (portrait) { camTarget.set(human.pos.x - 13, 12, human.pos.z * 0.3); camLook.set(human.pos.x + 8, 0, human.pos.z * 0.2); }
     else { camTarget.set(human.pos.x - 11.5, 9, human.pos.z * 0.55); camLook.set(human.pos.x + 9, 0.5, human.pos.z * 0.35); }
@@ -2132,7 +2274,7 @@ function frame() {
   requestAnimationFrame(frame);
   const raw = clock.getDelta();
   const rdt = Math.min(raw, 1 / 15); // don't turn low frame rates into slow motion
-  pollPad(); updateHints();
+  pollPad(); pollP2(); updateHints();
   if (!paused) advance(rdt);
   updateTopUI(raw);
   if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera);
@@ -2171,7 +2313,7 @@ function tick(dt, rdt) {
   } else if (state === 'play') {
     timer -= dt;
     let t0 = performance.now();
-    for (const f of fighters) if (active(f)) (f.human ? controlHuman(f) : controlAI(f, dt));
+    for (const f of fighters) if (active(f)) (f.human ? controlHuman(f) : f.p2 ? controlP2(f) : controlAI(f, dt));
     pm('ai', t0); t0 = performance.now();
     for (const f of fighters) updateFighter(f, dt);
     pm('fighters+anim', t0); t0 = performance.now();
@@ -2226,7 +2368,7 @@ loadLooks((d, n) => { document.getElementById('loading').textContent = `Loading 
 
 // test hook
 window.__game = { get state() { return state; }, get fighters() { return fighters; }, get F() { return F; }, get wins() { return wins; }, get round() { return round; }, startMatch,
-  step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) advance(1 / 60); updateTopUI(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
+  step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) { pollP2(); advance(1 / 60); } updateTopUI(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
   prof: PROF, pollPad };
 </script>
 </body>

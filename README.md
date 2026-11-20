@@ -10,7 +10,10 @@ Works on PC and on phones/tablets (on-screen joystick and buttons, attacks auto-
 Choose **Easy / Normal / Hard** on the menu, customise your fighter (body, outfit, hair), and use
 **⚙️ Settings** for volume, announcer voice, graphics level and a frame-rate counter.
 
-Three arenas (Night, Sunset, Day), a career with XP levels and stats saved in your browser, and it can be
+**Local 2-player:** Co-op (both on blue) or Versus (one per team) on the same PC — Player 2 uses a controller
+or the arrow keys (Enter attack · Right Shift special · Right Ctrl dodge · / ultimate).
+
+Three arenas (Night, Sunset, Day), 12 achievements, a career with XP levels and stats saved in your browser, and it can be
 **installed as an app** (📲 Install button or your browser's "Add to Home screen") and played offline.
 
 ## Controls
