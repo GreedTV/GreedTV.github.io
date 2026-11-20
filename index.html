@@ -443,7 +443,6 @@
     <input type="range" id="vol" min="0" max="100" step="5">
     <label for="musicVol">Music <span id="musicVal"></span></label>
     <input type="range" id="musicVol" min="0" max="100" step="5">
-    <label class="check"><input type="checkbox" id="voiceOn"> Announcer voice</label>
     <label class="check"><input type="checkbox" id="calmOn"> Reduce motion (no screen shake or flashes)</label>
     <label>Graphics</label>
     <div class="types" id="gfx"><button type="button" data-q="0">Low</button><button type="button" data-q="1">Medium</button><button type="button" data-q="2">High</button></div>
@@ -1171,17 +1170,13 @@ function playStep(s, t) {
     mOsc(t, mtof(n), mtof(n), 0.22, 'triangle', fight ? 0.07 : 0.05, 0.005, 3000);
   }
 }
-function say(text) {
-  if (muted || !settings.voice || settings.vol === 0 || !('speechSynthesis' in window)) return;
-  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1.05; u.pitch = 0.75; u.volume = 0.9; speechSynthesis.speak(u); } catch (e) {}
-}
 // ---- player settings (saved in this browser) ----
-const settings = { vol: 80, music: 50, voice: true, fps: false, calm: false };
+const settings = { vol: 80, music: 50, fps: false, calm: false };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('aoe-settings')) || {}); } catch (e) {}
 function saveSettings() { try { localStorage.setItem('aoe-settings', JSON.stringify(settings)); } catch (e) {} }
 function masterLevel() { return muted ? 0 : (settings.vol / 100) * 0.6; }
 function applyVolume() { if (master) master.gain.value = masterLevel(); }
-function toggleMute() { muted = !muted; applyVolume(); if (muted && 'speechSynthesis' in window) speechSynthesis.cancel(); toast(muted ? 'Sound off' : 'Sound on'); }
+function toggleMute() { muted = !muted; applyVolume(); toast(muted ? 'Sound off' : 'Sound on'); }
 
 // ================= FIGHTERS =================
 function makeFighterMesh(teamIdx, elKey, look) {
@@ -1370,7 +1365,7 @@ function startPractice(el) {
   resetRound();
   state = 'play'; stateT = 0; document.getElementById('skip').classList.add('hidden');
   document.getElementById('round').textContent = 'PRACTICE';
-  announce('PRACTICE', '#ffd54a'); say('Practice');
+  announce('PRACTICE', '#ffd54a');
   document.getElementById('practicePanel').classList.remove('hidden');
   document.getElementById('prDone').classList.add('hidden');
   practice.last = human.pos.clone(); renderPractice();
@@ -1393,7 +1388,7 @@ function renderPractice() {
 function practiceNext() {
   practice.step++; sfx('zone'); crowdReact(0.6);
   if (practice.step >= PR_STEPS.length) {
-    practice.done = true; announce('WELL DONE!', '#7dff9a'); say('Well done!');
+    practice.done = true; announce('WELL DONE!', '#7dff9a');
     document.getElementById('prDone').classList.remove('hidden');
   } else {
     toast(`✓ ${PR_STEPS[practice.step - 1].t}`, '#7dff9a');
@@ -1491,7 +1486,6 @@ function startMatch(el) {
   for (const f of floats) f.d.remove(); floats.length = 0;
   resetRound();
 }
-const NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 function resetRound() {
   F = [0, 0]; timer = ROUND_TIME; clearProjectiles(); roundWinner = -1; storms = []; resetWild();
   for (const f of fighters) {
@@ -1510,11 +1504,9 @@ function resetRound() {
   document.getElementById('skip').classList.remove('hidden');
   if (ladderMatch >= 0 && round === 1) {
     announce(`STAGE ${ladderMatch + 1}: ${LADDER[ladderMatch].name.toUpperCase()}`, '#ffd54a');
-    say(`Stage ${NUM[ladderMatch + 1]}. ${LADDER[ladderMatch].name}`);
     document.getElementById('round').textContent = `STAGE ${ladderMatch + 1}/5 · ROUND 1`;
   } else {
     announce(`ROUND ${round}`, '#ffd54a');
-    say(`Round ${NUM[round] || round}`);
     if (ladderMatch >= 0) document.getElementById('round').textContent = `STAGE ${ladderMatch + 1}/5 · ROUND ${round}`;
   }
   crowdReact(0.6);
@@ -1907,7 +1899,6 @@ document.getElementById('howClose').addEventListener('click', () => { closeModal
 const volEl = document.getElementById('vol'), volVal = document.getElementById('volVal');
 function renderSettings() {
   volEl.value = settings.vol; volVal.textContent = settings.vol + '%';
-  document.getElementById('voiceOn').checked = settings.voice;
   document.getElementById('calmOn').checked = settings.calm;
   musicEl.value = settings.music; document.getElementById('musicVal').textContent = settings.music + '%';
   document.getElementById('fpsOn').checked = settings.fps;
@@ -1919,7 +1910,6 @@ volEl.addEventListener('input', () => { settings.vol = +volEl.value; volVal.text
 const musicEl = document.getElementById('musicVol');
 musicEl.addEventListener('input', () => { settings.music = +musicEl.value; document.getElementById('musicVal').textContent = settings.music + '%'; saveSettings(); });
 document.getElementById('calmOn').addEventListener('change', (e) => { settings.calm = e.target.checked; saveSettings(); });
-document.getElementById('voiceOn').addEventListener('change', (e) => { settings.voice = e.target.checked; saveSettings(); if (!settings.voice && 'speechSynthesis' in window) speechSynthesis.cancel(); });
 document.getElementById('fpsOn').addEventListener('change', (e) => { settings.fps = e.target.checked; saveSettings(); });
 document.getElementById('gfx').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { qIdx = +b.dataset.q; applyQuality(); renderSettings(); } });
 [howEl, setEl].forEach(el => el.addEventListener('pointerdown', (e) => { if (e.target === el) closeModal(el); }));
@@ -2336,8 +2326,7 @@ function endRound(winner, reason) {
   if (winner >= 0) {
     roundLog.push(winner);
     wins[winner]++; announce(`${TEAM[winner].name.toUpperCase()} WINS THE ROUND`, TEAM[winner].css);
-    if (wins[winner] < WIN_ROUNDS) setTimeout(() => say(`${TEAM[winner].name} takes the round!`), 700);
-  } else { announce('DRAW ROUND', '#fff'); say('Draw!'); }
+  } else { announce('DRAW ROUND', '#fff'); }
   if (reason) setTimeout(() => toast(reason), 300);
   crowdReact(1);
   renderPips();
@@ -2402,7 +2391,6 @@ function showEnd() {
   document.getElementById('hud').classList.add('hidden');
   for (const f of fighters) f.label.style.display = 'none';
   setTimeout(() => { if (state === 'over' && endRevealT > 0) announce(`⭐ MVP: ${fighterName(mvp).toUpperCase()}`, TEAM[mvp.team].css); }, 250);
-  say(`${won ? 'Victory!' : 'Defeat.'} Most valuable player: ${fighterName(mvp)}`);
   mouseDown = false;
 }
 let endMvp = null, endRevealT = 0, endChampion = false;
@@ -2822,7 +2810,7 @@ function tick(dt, rdt) {
   } else if (state === 'countdown') {
     stateT -= rdt;
     const n = Math.ceil((stateT - 0.2) / 0.7);
-    if (n !== lastCount) { lastCount = n; if (n > 0) { announce(String(n), '#ffd54a'); sfx('beep'); } else { announce('FIGHT!', '#ffffff'); sfx('go'); horn(); say('Fight!'); crowdReact(0.9); } }
+    if (n !== lastCount) { lastCount = n; if (n > 0) { announce(String(n), '#ffd54a'); sfx('beep'); } else { announce('FIGHT!', '#ffffff'); sfx('go'); horn(); crowdReact(0.9); } }
     if (stateT <= 0.2) state = 'play';
     idleAll(dt);
   } else if (state === 'play') {
@@ -2960,7 +2948,7 @@ function hitNote(target, owner, text, color, big, ko = false) {
 function shakeFor(f, mine, other) { shake = Math.max(shake, f === human ? mine : other); }
 function ultNote(f) {
   const E = ELEMENTS[f.el];
-  if (f === human) { announce(ULT_NAMES[f.el] + '!', E.css); say(ULT_NAMES[f.el].toLowerCase()); career.ultimates++; matchUlts++; }
+  if (f === human) { announce(ULT_NAMES[f.el] + '!', E.css); career.ultimates++; matchUlts++; }
   else toast(`${fighterName(f)}: ${ULT_NAMES[f.el]}!`, TEAM[f.team].css);
 }
 function outNote(f) { if (f === human) document.getElementById('spectate').classList.remove('hidden'); }
@@ -2968,7 +2956,7 @@ function pushNote(f, zone) { if (f === human) toast(`You were pushed back to zon
 function startSlow(f, final) {
   slow = { t: final ? 1.5 : 0.9, scale: final ? 0.22 : 0.32, focus: f };
   crowdReact(final ? 1 : 0.8);
-  if (final) { flash(0.45); say('Knockout!'); }
+  if (final) { flash(0.45); }
 }
 function ringLocal(...a) { return (rpcFns.spawnRing || spawnRing)(...a); }
 
@@ -3104,7 +3092,7 @@ function rpcWrap(name, fn) {
 }
 fxHit = rpcWrap('fxHit', fxHit); fxSplash = rpcWrap('fxSplash', fxSplash); spawnDebris = rpcWrap('spawnDebris', spawnDebris);
 spawnRing = rpcWrap('spawnRing', spawnRing); fxCast = rpcWrap('fxCast', fxCast); announce = rpcWrap('announce', announce);
-toast = rpcWrap('toast', toast); say = rpcWrap('say', say); sfx = rpcWrap('sfx', sfx); horn = rpcWrap('horn', horn);
+toast = rpcWrap('toast', toast); sfx = rpcWrap('sfx', sfx); horn = rpcWrap('horn', horn);
 flash = rpcWrap('flash', flash); crowdReact = rpcWrap('crowdReact', crowdReact); animF = rpcWrap('animF', animF);
 fxWallRise = rpcWrap('fxWallRise', fxWallRise); fxWallBreak = rpcWrap('fxWallBreak', fxWallBreak); fxGust = rpcWrap('fxGust', fxGust);
 fxInferno = rpcWrap('fxInferno', fxInferno); fxQuake = rpcWrap('fxQuake', fxQuake); fxDodge = rpcWrap('fxDodge', fxDodge);

@@ -8,7 +8,7 @@ into the water, or hold more ground when time runs out. Win 2 rounds to win the 
 
 Works on PC and on phones/tablets (on-screen joystick and buttons, attacks auto-aim at the nearest enemy).
 Choose **Easy / Normal / Hard** on the menu, customise your fighter (body, outfit, hair), and use
-**⚙️ Settings** for volume, announcer voice, graphics level and a frame-rate counter.
+**⚙️ Settings** for volume, music, graphics level and a frame-rate counter.
 
 **🏆 Ladder:** five stages in a row — Rookie Ring, Rising Tide, Stone Wall, Storm Front and the Grand Final —
 each harder, with its own arena and enemy team. Progress is saved; beat all five to become 👑 Champion.
