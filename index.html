@@ -86,7 +86,20 @@
   .card .icon { font-size: 40px; }
   .card h3 { margin: 6px 0; color: var(--elc); letter-spacing: 2px; }
   .card div.d { font-size: 13px; color: var(--muted); line-height: 1.45; }
-  #loading { color: var(--gold); font-weight: 700; min-height: 1.4em; }
+  #loading { color: var(--gold); font-weight: 700; min-height: 1.4em; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  #loading:empty { display: none; }
+  #loadbar { width: 220px; height: 6px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
+  #loadbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff7a2f, #4fc0ff, #c49a6c, #e8f6ff); transition: width .3s; }
+  /* speech bubbles (quick chat) */
+  .bubble { position: absolute; transform: translate(-50%, -100%); background: #fff; color: #10131f; font-weight: 800; font-size: 13px; padding: 5px 10px; border-radius: 10px; white-space: nowrap; pointer-events: none; box-shadow: 0 3px 10px rgba(0,0,0,.4); }
+  .bubble::after { content: ''; position: absolute; left: 50%; bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: #fff; }
+  #netinfo { position: fixed; top: 8px; left: 10px; z-index: 20; font: 700 12px "Segoe UI", system-ui, sans-serif; color: #7dff9a; background: var(--panel); padding: 3px 8px; border-radius: 6px; pointer-events: none; }
+  #fps:not(.hidden) ~ #netinfo { top: 32px; }
+  body.touchmode #netinfo { top: 66px; }
+  #awayBanner { position: fixed; top: 40%; left: 50%; transform: translateX(-50%); z-index: 25; background: rgba(8,12,28,.92); border: 2px solid var(--gold); color: var(--text); padding: 14px 20px; border-radius: 12px; font-weight: 700; text-align: center; max-width: 90vw; }
+  #tEmote { left: 70px; top: 12px; }
+  #tEmotes { position: absolute; left: 12px; top: 70px; display: flex; flex-direction: column; gap: 6px; }
+  #tEmotes button { background: rgba(20,30,60,.85); color: #fff; border: 2px solid rgba(255,255,255,.35); border-radius: 10px; padding: 8px 14px; font: 800 13px "Segoe UI", system-ui, sans-serif; text-align: left; }
   .btn { pointer-events: auto; background: #1d2a55; color: var(--text); border: 2px solid var(--blue); border-radius: 10px; padding: 10px 22px; font-size: 16px; font-weight: 800; cursor: pointer; }
   .btn:hover { background: #2a3b75; }
   .btn.ghost { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.22); }
@@ -274,7 +287,7 @@
     <p>3 vs 3. Hit the other team to push them back across the zone lines. Knock everyone off the back edge into the water, or hold more ground when time runs out. Win 2 rounds to win the match.</p>
   </div>
   <div class="menuBottom">
-    <div id="loading">Loading fighters…</div>
+    <div id="loading"><span id="loadText">Loading fighters…</span><div id="loadbar"><i></i></div></div>
     <div id="picker" class="hidden">
       <div class="pk"><span>Players</span><button data-mode="solo">Solo</button><button data-mode="coop">2P Co-op</button><button data-mode="vs">2P Versus</button><button id="onlineBtn" class="onl">🌐 Online</button></div>
       <div class="pk hidden" id="p2hint" style="font-size:12px;color:var(--muted)">Player 2: a controller, or <b style="color:var(--text)">arrow keys</b> + <b style="color:var(--text)">Enter</b> attack · <b style="color:var(--text)">Right Shift</b> special · <b style="color:var(--text)">Right Ctrl</b> dodge · <b style="color:var(--text)">/</b> ultimate</div>
@@ -321,6 +334,8 @@
   <button id="fbBtn" class="tb" type="button">💬 Feedback</button>
 </div>
 <div id="fps" class="hidden"></div>
+<div id="netinfo" class="hidden"></div>
+<div id="awayBanner" class="hidden">⏸ The host switched away from the game. It continues when they come back.</div>
 
 <div id="howto" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="howTitle">
   <div class="box">
@@ -399,6 +414,8 @@
   <button type="button" id="tDdg" class="tbtn">DODGE<i class="cd"></i></button>
   <button type="button" id="tUlt" class="tbtn">ULT<i class="cd"></i></button>
   <button type="button" id="tPause" class="tbtn small" aria-label="Pause">⏸</button>
+  <button type="button" id="tEmote" class="tbtn small" aria-label="Quick chat">💬</button>
+  <div id="tEmotes" class="hidden"><button type="button" data-em="0">GG!</button><button type="button" data-em="1">Nice shot!</button><button type="button" data-em="2">Help!</button><button type="button" data-em="3">Watch this!</button></div>
 </div>
 <div id="fb" class="hidden" role="dialog" aria-modal="true" aria-labelledby="fbTitle">
   <div class="box">
@@ -1615,8 +1632,8 @@ function closeModal(el) {
 }
 function renderHowKeys() {
   document.getElementById('howKeys').innerHTML = touchMode
-    ? '<b>Left stick</b> move · <b>ATTACK</b> (hold) fires at the nearest enemy · <b>SPECIAL</b> element power · <b>DODGE</b> quick roll · <b>ULT</b> ultimate when it glows · <b>⏸</b> pause'
-    : '<b>WASD</b> move · <b>Mouse</b> aim · <b>Hold left click</b> attack · <b>Right click / E</b> special · <b>Space</b> dodge · <b>Q</b> ultimate (when charged) · <b>P</b> pause · <b>M</b> mute · <b>G</b> graphics';
+    ? '<b>Left stick</b> move · <b>ATTACK</b> (hold) fires at the nearest enemy · <b>SPECIAL</b> element power · <b>DODGE</b> quick roll · <b>ULT</b> ultimate when it glows · <b>💬</b> quick chat · <b>⏸</b> pause'
+    : '<b>WASD</b> move · <b>Mouse</b> aim · <b>Hold left click</b> attack · <b>Right click / E</b> special · <b>Space</b> dodge · <b>Q</b> ultimate (when charged) · <b>1–4</b> quick chat · <b>P</b> pause · <b>M</b> mute · <b>G</b> graphics';
 }
 function openHow() { renderHowKeys(); openModal(howEl); }
 document.getElementById('howBtn').addEventListener('click', openHow);
@@ -1750,6 +1767,7 @@ function pollPad() {
       if (press(1) || press(5)) specialQ = true;
       if (press(2) || press(4)) dodgeQ = true;
       if (press(3)) ultQ = true;
+      [12, 15, 13, 14].forEach((b, i) => { if (press(b)) localEmote(i); }); // D-pad: up GG · right Nice shot · down Help · left Watch this
     }
     pad.atk = btn(7) || btn(0);
   }
@@ -1775,6 +1793,8 @@ function updateTopUI(raw) {
   document.body.classList.toggle('touchmode', touchMode);
   document.body.classList.toggle('twoplayer', !!p2 && inMatch);
   fpsEl.classList.toggle('hidden', !settings.fps);
+  updateNetInfo();
+  if (!showTouch) tEmotes.classList.add('hidden');
   if (settings.fps) { fpsFrames++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = `${Math.round(fpsFrames / fpsT)} FPS · ${QUALITY[qIdx].name}`; fpsT = 0; fpsFrames = 0; } }
 }
 
@@ -1796,6 +1816,7 @@ addEventListener('keydown', (e) => {
     if (e.code === 'Slash' || e.code === 'Numpad3') p2in.ultQ = true;
     if (/^Arrow/.test(e.code)) e.preventDefault();
   }
+  if (/^Digit[1-4]$/.test(e.code)) localEmote(+e.code.slice(5) - 1);
   if (e.code === 'KeyM') toggleMute();
   if (e.code === 'KeyG') { qIdx = (qIdx + 1) % QUALITY.length; applyQuality(true); }
   if ((e.code === 'KeyP' || e.code === 'Escape') && !['menu', 'over', 'loading'].includes(state) && !anyModal()) togglePause();
@@ -1939,7 +1960,14 @@ function updateFighter(f, dt) {
       fxSplash(f.pos.x, f.pos.z); sfx('splash');
       f.stats.outs++;
       const by = f.lastHitBy && perfNow - f.lastHitT < 5 ? f.lastHitBy : null;
-      if (by) { by.stats.kos++; hitNote(f, by, 'KO!', '#ffd54a', true, true); }
+      if (by) {
+        by.stats.kos++; hitNote(f, by, 'KO!', '#ffd54a', true, true);
+        // a computer teammate cheers when a player scores a knock-out
+        if ((by.human || by.owner || by.p2) && Math.random() < 0.5) {
+          const mate = fighters.find(m => m.team === by.team && m !== by && active(m) && !m.human && !m.owner && !m.p2);
+          if (mate) emoteShow(mate, 1);
+        }
+      }
       const solo = NET.mode === 'off';
       toast(`${fighterName(f)} ${solo && f.human ? 'are' : 'is'} OUT!${by ? ` (knocked out by ${solo && by.human ? 'you' : fighterName(by)})` : ''}`, TEAM[f.team].css);
       outNote(f);
@@ -2131,7 +2159,40 @@ function spawnFloat(text, target, color, big = false) {
   labelsEl.appendChild(d);
   floats.push({ d, pos: v3(target.pos.x + rnd(0.6), 2.6, target.pos.z), t: 0, life: big ? 1.1 : 0.8 });
 }
+// ---- quick chat: speech bubbles over fighters (1-4 keys, D-pad, 💬 on touch) ----
+const EMOTES = [
+  { text: 'GG!', anim: 'cheer' }, { text: 'Nice shot!', anim: 'cheer' },
+  { text: 'Help!', anim: 'hitA' }, { text: 'Watch this!', anim: 'punchA' },
+];
+const bubbles = [];
+function emoteShow(f, i) {
+  const E = EMOTES[i]; if (!E || !f || f.out) return;
+  for (let k = bubbles.length - 1; k >= 0; k--) if (bubbles[k].f === f) { bubbles[k].d.remove(); bubbles.splice(k, 1); }
+  const d = document.createElement('div'); d.className = 'bubble'; d.textContent = E.text;
+  d.style.border = `2px solid ${TEAM[f.team].css}`;
+  labelsEl.appendChild(d); bubbles.push({ d, f, t: 0 });
+  if (active(f) && (state === 'play' || state === 'roundEnd' || state === 'countdown')) playOnce(f.mesh, E.anim, 1.4);
+  sfx('beep');
+}
+let emoteCd = 0;
+function localEmote(i) {
+  if (!human || emoteCd > 0 || !['intro', 'countdown', 'play', 'roundEnd', 'over'].includes(state)) return;
+  emoteCd = 1.2;
+  if (NET.mode === 'client') { if (NET.hostConn && NET.hostConn.open) NET.hostConn.send({ k: 'emote', i }); }
+  else emoteShow(human, i);
+}
+function updateBubbles(rdt) {
+  emoteCd = Math.max(0, emoteCd - rdt);
+  for (let k = bubbles.length - 1; k >= 0; k--) {
+    const b = bubbles[k]; b.t += rdt;
+    if (b.t > 2.6 || b.f.out || !fighters.includes(b.f)) { b.d.remove(); bubbles.splice(k, 1); continue; }
+    projV.set(b.f.pos.x, b.f.pos.y + 3.2, b.f.pos.z).project(camera);
+    b.d.style.left = `${(projV.x * 0.5 + 0.5) * innerWidth}px`; b.d.style.top = `${(-projV.y * 0.5 + 0.5) * innerHeight}px`;
+    b.d.style.opacity = b.t > 2.2 ? (2.6 - b.t) / 0.4 : 1;
+  }
+}
 function updateFloats(rdt) {
+  updateBubbles(rdt);
   for (let i = floats.length - 1; i >= 0; i--) {
     const f = floats[i]; f.t += rdt; f.pos.y += rdt * 1.4;
     if (f.t >= f.life) { f.d.remove(); floats.splice(i, 1); continue; }
@@ -2410,7 +2471,8 @@ function tick(dt, rdt) {
 // The host's game runs the real match. Friends send their controls to the host and get back the game
 // state ~20 times a second, plus every effect / sound / animation as it happens ("visual calls").
 const NET = { mode: 'off', peer: null, conns: new Map(), hostConn: null, code: '', myId: 'host', lobby: [], intents: new Map(),
-  inMatch: false, sendT: 0, inT: 0, fxq: [], edge: { spc: false, ddg: false, ult: false }, joinTimer: 0 };
+  inMatch: false, sendT: 0, inT: 0, fxq: [], edge: { spc: false, ddg: false, ult: false }, joinTimer: 0,
+  emoteT: new Map(), rtt: 0, pingT: 0 };
 let netIdSeq = 0, netMenuOpen = false;
 const netProj = new Map(), netWalls = new Map();
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -2510,7 +2572,7 @@ fxWallRise = rpcWrap('fxWallRise', fxWallRise); fxWallBreak = rpcWrap('fxWallBre
 fxInferno = rpcWrap('fxInferno', fxInferno); fxQuake = rpcWrap('fxQuake', fxQuake); fxDodge = rpcWrap('fxDodge', fxDodge);
 fxClash = rpcWrap('fxClash', fxClash); hitNote = rpcWrap('hitNote', hitNote); shakeFor = rpcWrap('shakeFor', shakeFor);
 ultNote = rpcWrap('ultNote', ultNote); outNote = rpcWrap('outNote', outNote); pushNote = rpcWrap('pushNote', pushNote);
-startSlow = rpcWrap('startSlow', startSlow);
+startSlow = rpcWrap('startSlow', startSlow); emoteShow = rpcWrap('emoteShow', emoteShow);
 
 // ---- host: send the game state to everyone ~20x per second ----
 function netSendAll(msg) { for (const c of NET.conns.values()) if (c.open) { try { c.send(msg); } catch (e) {} } }
@@ -2533,6 +2595,7 @@ function netClientNewRound() {
 }
 function netApplySnap(s) {
   if (!NET.inMatch || state === 'over' || !Array.isArray(s.f)) return;
+  awayEl.classList.add('hidden'); // the host is sending again
   const prevRound = round, prevF = F[0], prevW = String(wins);
   if (['intro', 'countdown', 'play', 'roundEnd'].includes(s.s)) state = s.s; else if (s.s === 'over') state = 'roundEnd';
   stateT = +s.st || 0; timer = +s.tm || 0; wins = s.w; round = s.rd; F = s.F; roundWinner = s.rw;
@@ -2594,6 +2657,10 @@ function clientUpdate(dt, rdt) {
     fxTrail(p);
   }
   for (const w of netWalls.values()) { w.t += dt; w.mesh.position.y = THREE.MathUtils.lerp(-1.1, 1.1, 1 - Math.pow(1 - Math.min(1, w.t / 0.22), 3)); }
+  if (NET.hostConn && NET.hostConn.open) {
+    NET.pingT -= rdt;
+    if (NET.pingT <= 0) { NET.pingT = 2; try { NET.hostConn.send({ k: 'ping', t: performance.now() }); } catch (e) {} }
+  }
   if (human && NET.hostConn && NET.hostConn.open) {
     const it = readIntent(human);
     NET.edge.spc = NET.edge.spc || it.spc; NET.edge.ddg = NET.edge.ddg || it.ddg; NET.edge.ult = NET.edge.ult || it.ult;
@@ -2705,6 +2772,12 @@ function hostOnData(conn, msg) {
     if ((msg.team === 0 || msg.team === 1) && msg.team !== p.team && NET.lobby.filter(q => q.team === msg.team).length < 3) p.team = msg.team;
     if (ORDER.includes(msg.el)) p.el = msg.el;
     netLobbyBroadcast();
+  } else if (msg.k === 'ping') {
+    try { conn.send({ k: 'pong', t: +msg.t || 0 }); } catch (e) {}
+  } else if (msg.k === 'emote') {
+    const now = performance.now(), last = NET.emoteT.get(id) || 0;
+    const f = fighters.find(q => q.owner === id);
+    if (f && NET.inMatch && now - last > 1000 && Number.isInteger(msg.i) && EMOTES[msg.i]) { NET.emoteT.set(id, now); emoteShow(f, msg.i); }
   } else if (msg.k === 'in') {
     const prev = NET.intents.get(id) || {};
     NET.intents.set(id, { mx: c1(msg.mx), mz: c1(msg.mz), ax: c1(msg.ax), az: c1(msg.az), atk: !!msg.atk,
@@ -2764,6 +2837,8 @@ function clientOnData(msg) {
     showEnd();
   } else if (msg.k === 'back') netToLobbyScreen();
   else if (msg.k === 'busy') { netLeave(true); netError(String(msg.why || 'Could not join that room.')); }
+  else if (msg.k === 'pong') NET.rtt = Math.max(0, performance.now() - (+msg.t || 0));
+  else if (msg.k === 'away') document.getElementById('awayBanner').classList.toggle('hidden', !msg.v);
 }
 function netHostStart() {
   if (NET.mode !== 'host') return;
@@ -2831,6 +2906,23 @@ function netCleanup() {
   if (NET.hostConn) { try { NET.hostConn.close(); } catch (e) {} }
   if (NET.peer) { try { NET.peer.destroy(); } catch (e) {} }
   NET.peer = null; NET.hostConn = null; NET.conns.clear(); NET.intents.clear(); NET.lobby = []; NET.mode = 'off'; NET.myId = 'host';
+  NET.emoteT.clear(); NET.rtt = 0; awayEl.classList.add('hidden');
+}
+// tell friends when the host switches away (browsers pause background tabs, so the match freezes)
+const awayEl = document.getElementById('awayBanner');
+document.addEventListener('visibilitychange', () => { if (NET.mode === 'host' && NET.inMatch) netSendAll({ k: 'away', v: document.hidden }); });
+// touch quick chat
+const tEmotes = document.getElementById('tEmotes');
+document.getElementById('tEmote').addEventListener('pointerdown', (e) => { e.preventDefault(); tEmotes.classList.toggle('hidden'); });
+tEmotes.addEventListener('pointerdown', (e) => { const b = e.target.closest('button'); if (!b) return; e.preventDefault(); localEmote(+b.dataset.em); tEmotes.classList.add('hidden'); });
+// connection info in the corner (online only)
+const netInfoEl = document.getElementById('netinfo');
+function updateNetInfo() {
+  const show = NET.mode !== 'off' && NET.inMatch;
+  netInfoEl.classList.toggle('hidden', !show);
+  if (!show) return;
+  if (NET.mode === 'host') { const n = NET.conns.size; netInfoEl.style.color = '#7dff9a'; netInfoEl.textContent = `🌐 Hosting · ${n} friend${n === 1 ? '' : 's'}`; }
+  else { const ms = Math.round(NET.rtt); netInfoEl.style.color = ms < 120 ? '#7dff9a' : ms < 250 ? '#ffd54a' : '#ff6a6a'; netInfoEl.textContent = ms ? `🌐 Ping ${ms} ms` : '🌐 Connected'; }
 }
 function netLeave(keepModal = false) {
   const wasMatch = NET.inMatch || state === 'over';
@@ -2867,7 +2959,10 @@ addEventListener('resize', () => {
 updateTiles(); renderPips(); applyQuality(); drawJumbo();
 applyTheme(arenaChoice === 'random' ? 'night' : arenaChoice);
 frame();
-loadLooks((d, n) => { document.getElementById('loading').textContent = `Loading fighters… ${d}/${n}`; }).then(() => {
+loadLooks((d, n) => {
+  const t = document.getElementById('loadText'), b = document.querySelector('#loadbar i');
+  if (t) t.textContent = `Loading fighters… ${Math.round(d / n * 100)}%`; if (b) b.style.width = `${d / n * 100}%`;
+}).then(() => {
   state = 'menu'; looksReady = true;
   document.getElementById('loading').textContent = '';
   document.getElementById('cards').classList.remove('loading');

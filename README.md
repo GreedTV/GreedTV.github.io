@@ -30,6 +30,7 @@ Three arenas (Night, Sunset, Day), 12 achievements, a career with XP levels and 
 | Right click / E | Special |
 | Space | Dodge |
 | Q | Ultimate (when the meter is full): Inferno, Tsunami, Earthquake or Tornado |
+| 1–4 | Quick chat: GG! · Nice shot! · Help! · Watch this! (D-pad on a controller, 💬 on touch) |
 | P | Pause |
 | M | Mute |
 | G | Graphics quality (Low / Medium / High) |
