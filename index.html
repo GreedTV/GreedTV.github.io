@@ -168,6 +168,14 @@
   .how { margin: 0; padding-left: 20px; line-height: 1.55; font-size: 14px; color: #d6dcf0; }
   .how li { margin-bottom: 6px; } .how b { color: var(--gold); }
   .howkeys { font-size: 13px; color: var(--muted); line-height: 1.9; background: #070b18; border-radius: 8px; padding: 10px 12px; }
+  /* practice guide */
+  #practicePanel { position: absolute; top: 120px; right: 14px; width: 260px; background: var(--panel); border: 2px solid rgba(255,213,74,.45); border-radius: 12px; padding: 10px 14px; pointer-events: auto; font-size: 13px; }
+  #practicePanel > b { color: var(--gold); font-size: 15px; }
+  #prSteps { margin: 6px 0 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  #prSteps li { color: var(--muted); line-height: 1.35; } #prSteps li.now { color: #fff; font-weight: 700; } #prSteps li.ok { color: #7dff9a; }
+  #prSteps li small { display: block; color: var(--gold); font-weight: 600; font-size: 11.5px; }
+  .prdone { color: #7dff9a; font-weight: 800; margin: 8px 0; }
+  @media (max-width: 640px) { #practicePanel { top: 92px; width: 200px; font-size: 12px; padding: 8px 10px; } }
   /* player 2 panel */
   #p2hud { position: absolute; right: 18px; bottom: 22px; background: var(--panel); border: 2px solid rgba(120,255,150,.4); border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; min-width: 190px; }
   #p2hud .p2top { display: flex; gap: 8px; align-items: center; font-weight: 700; } #p2hud .p2top b { color: #7dff9a; font-size: 14px; }
@@ -262,6 +270,14 @@
     <div class="team red"><span id="winsR" class="pips"></span><span class="tname">RED</span></div>
   </div>
   <div id="terr"></div>
+  <div id="practicePanel" class="hidden">
+    <b>🎯 Practice</b>
+    <ol id="prSteps"></ol>
+    <div id="prDone" class="hidden">
+      <div class="prdone">🎉 Practice complete! You're ready to fight.</div>
+      <div class="row" style="gap:6px;justify-content:flex-start"><button type="button" class="btn small" id="prMenu">Back to menu</button><button type="button" class="btn ghost small" id="prKeep">Keep practicing</button></div>
+    </div>
+  </div>
   <div id="p2hud" class="hidden">
     <div class="p2top"><b>P2</b><span id="p2el"></span></div>
     <div class="p2row"><span>Strain</span><div class="bar"><i id="p2strain"></i></div></div>
@@ -289,7 +305,7 @@
   <div class="menuBottom">
     <div id="loading"><span id="loadText">Loading fighters…</span><div id="loadbar"><i></i></div></div>
     <div id="picker" class="hidden">
-      <div class="pk"><span>Players</span><button data-mode="solo">Solo</button><button data-mode="coop">2P Co-op</button><button data-mode="vs">2P Versus</button><button id="onlineBtn" class="onl">🌐 Online</button></div>
+      <div class="pk"><span>Players</span><button data-mode="solo">Solo</button><button data-mode="coop">2P Co-op</button><button data-mode="vs">2P Versus</button><button data-mode="practice">🎯 Practice</button><button id="onlineBtn" class="onl">🌐 Online</button></div>
       <div class="pk hidden" id="p2hint" style="font-size:12px;color:var(--muted)">Player 2: a controller, or <b style="color:var(--text)">arrow keys</b> + <b style="color:var(--text)">Enter</b> attack · <b style="color:var(--text)">Right Shift</b> special · <b style="color:var(--text)">Right Ctrl</b> dodge · <b style="color:var(--text)">/</b> ultimate</div>
       <div class="pk"><span>Arena</span><button data-arena="night">Night</button><button data-arena="sunset">Sunset</button><button data-arena="day">Day</button><button data-arena="random">🎲</button></div>
       <div class="pk"><span>Difficulty</span><button data-diff="easy">Easy</button><button data-diff="normal">Normal</button><button data-diff="hard">Hard</button></div>
@@ -467,27 +483,27 @@ const TEAM = [
 const ELEMENTS = {
   fire:  { name: 'Fire',  icon: '🔥', color: 0xff6a1a, css: '#ff7a2f', speed: 7.2, weight: 1,
            anim: { primary: ['punchA', 'punchB'], pSpeed: 2.3, special: 'cast', sSpeed: 1.1 },
-           primary: { cd: 0.32, speed: 30, radius: 0.32, force: 5.2, strain: 6, life: 1.2 },
+           primary: { cd: 0.32, speed: 30, radius: 0.32, force: 6.2, strain: 6, life: 1.2 },
            special: { cd: 3.5, kind: 'spread', name: 'Triple blast' },
            desc: 'Fast, rapid jabs. Special: three fireballs at once.' },
   water: { name: 'Water', icon: '💧', color: 0x3fb4ff, css: '#4fc0ff', speed: 6.8, weight: 2,
            anim: { primary: ['cast'], pSpeed: 1.3, special: 'punchB', sSpeed: 1.4 },
-           primary: { cd: 0.5, speed: 24, radius: 0.42, force: 7.5, strain: 8, life: 1.3 },
+           primary: { cd: 0.5, speed: 24, radius: 0.42, force: 7.0, strain: 8, life: 1.3 },
            special: { cd: 4.5, kind: 'wave', name: 'Tidal wave' },
            desc: 'Balanced shots. Special: a wide wave that hits everyone in its path.' },
   earth: { name: 'Earth', icon: '⛰️', color: 0x9a6b3c, css: '#c49a6c', speed: 6.0, weight: 3,
            anim: { primary: ['punchB', 'punchA'], pSpeed: 1.8, special: 'stomp', sSpeed: 1.6 },
-           primary: { cd: 0.8, speed: 19, radius: 0.55, force: 11, strain: 12, life: 1.5 },
+           primary: { cd: 0.85, speed: 19, radius: 0.55, force: 9, strain: 11, life: 1.5 },
            special: { cd: 6, kind: 'wall', name: 'Rock wall' },
            desc: 'Slow, heavy rocks that smash through lighter shots. Special: a wall that blocks shots.' },
   air:   { name: 'Air',   icon: '🌪️', color: 0xd8f3ff, css: '#e8f6ff', speed: 8.0, weight: 1, dodgeTime: 0.28,
            anim: { primary: ['punchA', 'punchB'], pSpeed: 2.6, special: 'cast', sSpeed: 1.0 },
-           primary: { cd: 0.38, speed: 34, radius: 0.38, force: 5.5, strain: 5, life: 1.1 },
+           primary: { cd: 0.38, speed: 34, radius: 0.38, force: 6.5, strain: 6, life: 1.1 },
            special: { cd: 5, kind: 'gust', name: 'Gust' },
            desc: 'Quick and slippery, long dodge. Special: a gust that shoves enemies and blows away shots.' },
   lightning: { name: 'Lightning', icon: '⚡', color: 0xffd23a, css: '#ffe14a', speed: 7.6, weight: 1,
            anim: { primary: ['cast'], pSpeed: 2.4, special: 'cast', sSpeed: 1.2 },
-           primary: { cd: 0.42, speed: 42, radius: 0.3, force: 4.8, strain: 7, life: 0.8 },
+           primary: { cd: 0.42, speed: 42, radius: 0.3, force: 5.3, strain: 7, life: 0.8 },
            special: { cd: 4.5, kind: 'chain', name: 'Chain lightning' },
            desc: 'The fastest bolts in the arena. Special: zaps the nearest enemy, then jumps to another.' },
 };
@@ -1191,7 +1207,7 @@ function makeFighter(team, el, slot, isHuman, look, isP2 = false) {
     arrow.rotation.x = Math.PI; arrow.position.y = 2.8; mesh.root.add(arrow); mesh.arrow = arrow;
   }
   const label = document.createElement('div'); label.className = 'lbl';
-  const tag = isP2 ? 'P2 · ' : isHuman ? (playerMode === 'solo' ? 'YOU · ' : 'P1 · ') : '';
+  const tag = isP2 ? 'P2 · ' : isHuman ? (isTwoP() ? 'P1 · ' : 'YOU · ') : '';
   label.innerHTML = `<span style="color:${ELEMENTS[el].css}">${tag}${ELEMENTS[el].name.toUpperCase()}</span><div class="bar"><i></i></div>`;
   label.style.borderBottom = `2px solid ${TEAM[team].css}`;
   labelsEl.appendChild(label);
@@ -1205,7 +1221,7 @@ function makeFighter(team, el, slot, isHuman, look, isP2 = false) {
   };
 }
 const active = (f) => !f.out && !f.falling;
-const fighterName = (f) => f.netName ? f.netName : f.p2 ? 'Player 2' : f.human ? (playerMode === 'solo' ? 'You' : 'Player 1') : `${TEAM[f.team].name} ${ELEMENTS[f.el].name}`;
+const fighterName = (f) => f.netName ? f.netName : f.p2 ? 'Player 2' : f.human ? (isTwoP() ? 'Player 1' : 'You') : f.dummy ? 'Dummy' : `${TEAM[f.team].name} ${ELEMENTS[f.el].name}`;
 const depthOf = (f) => f.side * f.pos.x;
 
 // ================= GAME STATE =================
@@ -1225,7 +1241,8 @@ const DIFFS = {
   hard:   { name: 'Hard',   skill: [0.85, 1.05], dodge: 0.55, aggr: 0.65 },
 };
 let playerMode = 'solo', p2 = null, roundLog = [];
-try { const m = localStorage.getItem('aoe-mode'); if (['solo', 'coop', 'vs'].includes(m)) playerMode = m; } catch (e) {}
+try { const m = localStorage.getItem('aoe-mode'); if (['solo', 'coop', 'vs', 'practice'].includes(m)) playerMode = m; } catch (e) {}
+function isTwoP() { return playerMode === 'coop' || playerMode === 'vs'; }
 let difficulty = 'normal';
 try { const d = localStorage.getItem('aoe-diff'); if (DIFFS[d]) difficulty = d; } catch (e) {}
 const lookKey = (l) => l.body + l.hair + '-' + l.hairColor + '-' + l.outfit;
@@ -1243,7 +1260,7 @@ function renderPicker() {
   document.querySelectorAll('[data-diff]').forEach(b => b.classList.toggle('on', b.dataset.diff === difficulty));
   document.querySelectorAll('[data-arena]').forEach(b => b.classList.toggle('on', b.dataset.arena === arenaChoice));
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === playerMode));
-  document.getElementById('p2hint').classList.toggle('hidden', playerMode === 'solo');
+  document.getElementById('p2hint').classList.toggle('hidden', !isTwoP());
   const st = HAIR_STYLES[playerLook.body];
   playerLook.hair = ((playerLook.hair % st.length) + st.length) % st.length;
   document.getElementById('hairName').textContent = st[playerLook.hair].name;
@@ -1272,7 +1289,8 @@ document.getElementById('swatches').addEventListener('click', (e) => { const i =
 
 function clearMatch() {
   for (const f of fighters) { scene.remove(f.mesh.root); f.label.remove(); }
-  fighters = []; human = null; p2 = null; clearProjectiles(); storms = [];
+  fighters = []; human = null; p2 = null; clearProjectiles(); storms = []; endPractice();
+  document.getElementById('toasts').innerHTML = '';
   document.getElementById('p2hud').classList.add('hidden');
 }
 function clearProjectiles() {
@@ -1282,7 +1300,102 @@ function clearProjectiles() {
 }
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
+// ================= PRACTICE MODE =================
+// You vs 3 dummies that never attack; no timer; dummies (and you) respawn; a step-by-step guide.
+let practice = null;
+const PR_STEPS = [
+  { t: 'Move around', k: { kb: 'W A S D', pad: 'left stick', touch: 'left joystick' } },
+  { t: 'Hit a dummy 3 times', k: { kb: 'aim with the mouse, hold left click', pad: 'RT or A (auto-aims)', touch: 'hold ATTACK (auto-aims)' } },
+  { t: 'Use your special power', k: { kb: 'right click or E', pad: 'B', touch: 'SPECIAL' } },
+  { t: 'Dodge', k: { kb: 'Space', pad: 'X', touch: 'DODGE' } },
+  { t: 'Unleash your ultimate (charged for you)', k: { kb: 'Q', pad: 'Y', touch: 'ULT' } },
+  { t: 'Knock a dummy into the water', k: { kb: 'keep hitting it past the back edge', pad: 'keep hitting it past the back edge', touch: 'keep hitting it past the back edge' } },
+];
+function startPractice(el) {
+  initAudio(); chosenEl = el; clearMatch(); removePreview();
+  applyTheme(arenaChoice === 'random' ? 'night' : arenaChoice);
+  const used = new Set([lookKey(playerLook)]);
+  fighters.push(makeFighter(0, el, 1, true, playerLook));
+  shuffle(ORDER).slice(0, 3).forEach((e, i) => {
+    const d = makeFighter(1, e, i, false, randomLook(e, 1, used)); d.dummy = true;
+    d.label.querySelector('span').textContent = '🎯 DUMMY'; fighters.push(d);
+  });
+  human = fighters[0]; p2 = null; roundLog = [];
+  practice = { step: 0, moved: 0, last: null, hits0: 0, ko0: 0, done: false };
+  wins = [0, 0]; round = 1;
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('end').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  document.getElementById('p2hud').classList.add('hidden');
+  const S = ELEMENTS[el];
+  document.getElementById('abSName').textContent = S.special.name;
+  for (const id of ['abP', 'abS', 'abD', 'abU']) document.getElementById(id).style.setProperty('--elc', S.css);
+  document.getElementById('abUName').textContent = ultLabel(el);
+  resetRound();
+  state = 'play'; stateT = 0; document.getElementById('skip').classList.add('hidden');
+  document.getElementById('round').textContent = 'PRACTICE';
+  announce('PRACTICE', '#ffd54a'); say('Practice');
+  document.getElementById('practicePanel').classList.remove('hidden');
+  document.getElementById('prDone').classList.add('hidden');
+  practice.last = human.pos.clone(); renderPractice();
+}
+function controlDummy(f) {
+  // drift slowly side to side a few metres behind the front line, facing the player; never attack
+  const minD = Math.max(F[f.team], f.line), d = depthOf(f), wantD = Math.min(11, minD + 3);
+  const wx = Math.abs(wantD - d) < 0.4 ? 0 : THREE.MathUtils.clamp((wantD - d) * 0.6, -1, 1);
+  f.want.set(f.side * wx, 0, Math.sin(perfNow * 0.6 + f.slot * 2.1) * 0.45);
+  if (human) { const to = human.pos.clone().sub(f.pos).setY(0); if (to.lengthSq() > 0.01) f.facing.copy(to.normalize()); }
+}
+function practiceKey(i) { const k = PR_STEPS[i].k; return touchMode ? k.touch : padMode ? k.pad : k.kb; }
+function renderPractice() {
+  if (!practice) return;
+  document.getElementById('prSteps').innerHTML = PR_STEPS.map((s, i) => {
+    const cls = i < practice.step ? 'ok' : i === practice.step && !practice.done ? 'now' : '';
+    return `<li class="${cls}">${i < practice.step ? '✓' : i === practice.step ? '▶' : '•'} ${s.t}${cls === 'now' ? `<small>${practiceKey(i)}</small>` : ''}</li>`;
+  }).join('');
+}
+function practiceNext() {
+  practice.step++; sfx('zone'); crowdReact(0.6);
+  if (practice.step >= PR_STEPS.length) {
+    practice.done = true; announce('WELL DONE!', '#7dff9a'); say('Well done!');
+    document.getElementById('prDone').classList.remove('hidden');
+  } else {
+    toast(`✓ ${PR_STEPS[practice.step - 1].t}`, '#7dff9a');
+    if (practice.step === 1) practice.hits0 = human.stats.hits;
+    if (practice.step === 4) human.ult = 100; // charge the ultimate for the lesson
+    if (practice.step === 5) practice.ko0 = human.stats.kos;
+  }
+  renderPractice();
+}
+function updatePractice(dt) {
+  timer = ROUND_TIME; // no clock in practice
+  // respawn anyone who fell in, and give the arena back
+  for (const f of fighters) {
+    if (!f.out) { f.respawnT = 2; continue; }
+    f.respawnT -= dt;
+    if (f.respawnT > 0) continue;
+    f.out = false; f.falling = false; f.strain = 0; f.kb.set(0, 0, 0); f.mv.set(0, 0, 0); f.vy = 0;
+    f.pos.set(f.side * (f.dummy ? 5 : 3), 0, (f.slot - 1) * 4.5);
+    f.mesh.root.visible = true; f.mesh.root.rotation.set(0, Math.atan2(-f.side, 0), 0); f.label.style.display = '';
+    F = [0, 0]; for (const o of fighters) o.line = 0; updateTiles();
+    if (f.human) document.getElementById('spectate').classList.add('hidden');
+  }
+  if (practice.done || !human) return;
+  const s = practice.step;
+  if (s === 0) { if (active(human)) practice.moved += human.pos.distanceTo(practice.last); practice.last.copy(human.pos); if (practice.moved > 8) practiceNext(); }
+  else if (s === 1) { if (human.stats.hits - practice.hits0 >= 3) practiceNext(); }
+  else if (s === 2) { if (human.cd.s > 0) practiceNext(); }
+  else if (s === 3) { if (human.cd.d > 0) practiceNext(); }
+  else if (s === 4) { if (human.ult < 100) practiceNext(); else if (!active(human)) human.ult = 100; }
+  else if (s === 5) { if (human.stats.kos > practice.ko0) practiceNext(); }
+}
+function endPractice() { practice = null; document.getElementById('practicePanel').classList.add('hidden'); }
+document.getElementById('prMenu').addEventListener('click', () => quitToMenu());
+document.getElementById('prKeep').addEventListener('click', () => document.getElementById('practicePanel').classList.add('hidden'));
+
 function startMatch(el) {
+  if (playerMode === 'practice' && NET.mode === 'off') return startPractice(el);
+  endPractice();
   initAudio();
   chosenEl = el; clearMatch();
   const mates = shuffle(ORDER.filter(e => e !== el)).slice(0, 2);
@@ -1415,14 +1528,14 @@ function doSpecial(f, dir) {
       for (const a of [-0.22, 0, 0.22]) spawnProjectile(f, rotY(dir, a), { ...E.primary, force: E.primary.force * 1.15 });
       break;
     case 'wave':
-      spawnProjectile(f, dir, { speed: 15, radius: 1.3, force: 12, strain: 12, life: 1.7 }, 'wave');
+      spawnProjectile(f, dir, { speed: 15, radius: 1.3, force: 11, strain: 11, life: 1.7 }, 'wave');
       break;
     case 'wall': {
       const pos = f.pos.clone().addScaledVector(dir, 2.2);
       const d = Math.max(F[f.team] + 0.5, f.side * pos.x); pos.x = f.side * d;
       pos.z = THREE.MathUtils.clamp(pos.z, -HALF_W + 1.7, HALF_W - 1.7);
       const mesh = makeWallMesh(pos, dir);
-      walls.push({ id: ++netIdSeq, team: f.team, pos, n: dir.clone(), mesh, hp: 5, life: 4.5, t: 0 });
+      walls.push({ id: ++netIdSeq, team: f.team, pos, n: dir.clone(), mesh, hp: 4, life: 3.5, t: 0 });
       fxWallRise(pos); shakeFor(f, 0.25, 0.1);
       break;
     }
@@ -1443,7 +1556,7 @@ function doSpecial(f, dir) {
       for (const e of chain) {
         const at = v3(e.pos.x, 1.3, e.pos.z);
         fxBolt(prev, at, true);
-        zapHit(f, e, at.clone().sub(prev).setY(0).normalize(), 8, 9);
+        zapHit(f, e, at.clone().sub(prev).setY(0).normalize(), 7, 8);
         prev = at;
       }
       break;
@@ -1453,7 +1566,7 @@ function doSpecial(f, dir) {
         if (e.team === f.team || !active(e) || e.dodgeT > 0) continue;
         const to = e.pos.clone().sub(f.pos); to.y = 0; const d = to.length(); to.normalize();
         if (d < 10 && to.dot(dir) > Math.cos(0.6)) {
-          e.kb.addScaledVector(to, 9 * (1 + e.strain / 55) * (1 - d / 14));
+          e.kb.addScaledVector(to, 11 * (1 + e.strain / 55) * (1 - d / 14));
           e.strain = Math.min(160, e.strain + 6); e.stunT = 0.25; e.flashT = 0.12;
           f.stats.hits++; e.lastHitBy = f; e.lastHitT = perfNow;
           f.ult = Math.min(100, f.ult + 4); e.ult = Math.min(100, e.ult + 3);
@@ -1786,7 +1899,7 @@ const dz = (v) => Math.abs(v) < 0.2 ? 0 : v;
 const getPads = () => navigator.getGamepads ? [...navigator.getGamepads()].filter(p => p && p.connected) : [];
 // In 2-player modes: with two controllers P1 gets the first and P2 the second;
 // with one controller it belongs to Player 2 (Player 1 uses keyboard + mouse).
-function p1Pad() { const pads = getPads(); if (playerMode !== 'solo' && pads.length < 2 && state !== 'menu' && state !== 'over') return null; return pads[0] || null; }
+function p1Pad() { const pads = getPads(); if (isTwoP() && pads.length < 2 && state !== 'menu' && state !== 'over') return null; return pads[0] || null; }
 function p2Pad() { const pads = getPads(); return pads.length >= 2 ? pads[1] : pads[0] || null; }
 // ---- Player 2 input (controller, or arrow keys + Enter / Right Shift / Right Ctrl / "/") ----
 const p2in = { mx: 0, my: 0, ax: 0, ay: 0, atk: false, spcQ: false, ddgQ: false, ultQ: false };
@@ -1908,7 +2021,7 @@ addEventListener('keyup', (e) => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; });
 addEventListener('pointermove', (e) => { mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); });
 addEventListener('pointerdown', (e) => {
-  if (anyModal() || e.target.closest('#topBtns, #touch, .modal, #fb')) return;
+  if (anyModal() || e.target.closest('#topBtns, #touch, .modal, #fb, #practicePanel')) return;
   if (e.pointerType === 'touch') { touchMode = true; initAudio(); if (state === 'intro') skipIntro = true; return; }
   if (e.pointerType === 'mouse' && state !== 'menu') { touchMode = false; padMode = false; }
   initAudio(); if (state === 'intro') skipIntro = true; if (e.button === 0) mouseDown = true; if (e.button === 2) specialQ = true; });
@@ -1922,7 +2035,7 @@ function readIntent(f) {
   specialQ = dodgeQ = ultQ = false;
   if (netMenuOpen) { it.spc = it.ddg = it.ult = false; return it; }
   const fwd = -f.side, rz = -f.side; // screen-right is +Z behind the blue side, -Z behind the red side
-  const side2p = playerMode !== 'solo' && NET.mode === 'off'; // local 2-player side camera: screen-relative controls
+  const side2p = isTwoP() && NET.mode === 'off'; // local 2-player side camera: screen-relative controls
   if (touchMode || padMode) {
     if (padMode) { if (side2p) it.want.set(pad.mx, 0, pad.my); else it.want.set(fwd * -pad.my, 0, rz * pad.mx); }
     else it.want.set(fwd * touch.y, 0, rz * touch.x);
@@ -1958,7 +2071,7 @@ function controlRemote(f) {
   r.spc = r.ddg = r.ult = false;
 }
 
-const PREF_DEPTH = { earth: 1.2, water: 2.2, fire: 2.6, air: 3.2, lightning: 2.8 };
+const PREF_DEPTH = { earth: 1.2, water: 2.2, fire: 2.6, air: 2.4, lightning: 2.6 }; // how far behind the front line each element likes to stand
 function controlAI(f, dt) {
   const ai = f.ai;
   const enemies = fighters.filter(e => e.team !== f.team && active(e));
@@ -2394,7 +2507,7 @@ document.getElementById('pSettings').addEventListener('click', () => { renderSet
 document.getElementById('pQuit').addEventListener('click', () => { if (NET.mode !== 'off') netLeave(); else quitToMenu(); });
 const projV = v3();
 function updateHUD() {
-  timerEl.textContent = Math.ceil(Math.max(0, timer));
+  timerEl.textContent = practice ? '∞' : Math.ceil(Math.max(0, timer));
   timerEl.classList.toggle('low', timer < 10);
   if (human) {
     const E = ELEMENTS[human.el], maxes = { p: E.primary.cd, s: E.special.cd, d: 1.1 };
@@ -2516,11 +2629,12 @@ function tick(dt, rdt) {
   } else if (state === 'play') {
     timer -= dt;
     let t0 = performance.now();
-    for (const f of fighters) if (active(f)) (f.human ? controlHuman(f) : f.p2 ? controlP2(f) : f.remote ? controlRemote(f) : controlAI(f, dt));
+    for (const f of fighters) if (active(f)) (f.human ? controlHuman(f) : f.p2 ? controlP2(f) : f.remote ? controlRemote(f) : f.dummy ? controlDummy(f) : controlAI(f, dt));
     pm('ai', t0); t0 = performance.now();
     for (const f of fighters) updateFighter(f, dt);
     pm('fighters+anim', t0); t0 = performance.now();
-    separate(); updateProjectiles(dt); updateWalls(dt); updateStorms(dt); checkZones(); checkRoundEnd();
+    separate(); updateProjectiles(dt); updateWalls(dt); updateStorms(dt); checkZones();
+    if (practice) updatePractice(dt); else checkRoundEnd();
     pm('projectiles', t0);
   } else if (state === 'roundEnd') {
     stateT -= rdt; idleAll(dt); updateProjectiles(dt); updateWalls(dt);

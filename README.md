@@ -10,6 +10,9 @@ Works on PC and on phones/tablets (on-screen joystick and buttons, attacks auto-
 Choose **Easy / Normal / Hard** on the menu, customise your fighter (body, outfit, hair), and use
 **⚙️ Settings** for volume, announcer voice, graphics level and a frame-rate counter.
 
+**🎯 Practice:** pick *Practice* under Players for a training room — 3 dummies that don't fight back, no timer,
+and a step-by-step guide through moving, attacking, specials, dodging, ultimates and ring-outs.
+
 **🌐 Online with friends:** press **Online** on the menu → *Host a room* and share the 5-letter code or the
 invite link. Up to 6 players (3 per team); computer fighters fill empty spots. Players connect directly to each
 other (WebRTC via [PeerJS](https://peerjs.com)); the host's game runs the match.
