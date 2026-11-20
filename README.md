@@ -20,6 +20,9 @@ and a step-by-step guide through moving, attacking, specials, dodging, ultimates
 invite link. Up to 6 players (3 per team); computer fighters fill empty spots. Players connect directly to each
 other (WebRTC via [PeerJS](https://peerjs.com)); the host's game runs the match.
 
+**🎲 Wild events:** turn on *Events* on the menu and every ~15 seconds the arena throws something at you —
+☄️ Meteor Shower, 🌀 Whirlwind, ⚡ Supercharge or 🪶 Low Gravity (not used in Ladder or Practice).
+
 **Local 2-player:** Co-op (both on blue) or Versus (one per team) on the same PC — Player 2 uses a controller
 or the arrow keys (Enter attack · Right Shift special · Right Ctrl dodge · / ultimate).
 

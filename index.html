@@ -60,6 +60,8 @@
 
   #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
   #danger { position: fixed; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 140px 30px rgba(255, 30, 40, .85); }
+  #eventTag { position: absolute; top: 108px; left: 50%; transform: translateX(-50%); background: rgba(8,12,28,.85); border: 2px solid var(--gold); color: var(--gold); padding: 4px 14px; border-radius: 20px; font-weight: 800; font-size: 13px; letter-spacing: 1px; white-space: nowrap; }
+  @media (max-width: 640px) { #eventTag { top: 84px; font-size: 11px; } }
   #edgeWarn { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); color: #ff4a4a; font-weight: 900; font-size: 20px; letter-spacing: 3px; text-shadow: 0 0 12px rgba(255,40,40,.8), 0 2px 4px #000; }
   body.touchmode #edgeWarn { bottom: 240px; }
   #announce { position: fixed; top: 34%; left: 0; right: 0; text-align: center; font-size: 64px; font-weight: 900; letter-spacing: 4px; pointer-events: none; text-shadow: 0 4px 20px rgba(0,0,0,.8); opacity: 0; }
@@ -281,6 +283,7 @@
     <div class="team red"><span id="winsR" class="pips"></span><span class="tname">RED</span></div>
   </div>
   <div id="terr"></div>
+  <div id="eventTag" class="hidden"></div>
   <div id="practicePanel" class="hidden">
     <b>🎯 Practice</b>
     <ol id="prSteps"></ol>
@@ -321,6 +324,7 @@
       <div class="pk hidden" id="ladderInfo" style="font-size:13px"></div>
       <div class="pk hidden" id="p2hint" style="font-size:12px;color:var(--muted)">Player 2: a controller, or <b style="color:var(--text)">arrow keys</b> + <b style="color:var(--text)">Enter</b> attack · <b style="color:var(--text)">Right Shift</b> special · <b style="color:var(--text)">Right Ctrl</b> dodge · <b style="color:var(--text)">/</b> ultimate</div>
       <div class="pk"><span>Arena</span><button data-arena="night">Night</button><button data-arena="sunset">Sunset</button><button data-arena="day">Day</button><button data-arena="random">🎲</button></div>
+      <div class="pk" title="Meteor showers, whirlwinds, supercharge and low gravity strike the arena every ~15 seconds"><span>Events</span><button data-wild="0">Off</button><button data-wild="1">🎲 Wild</button></div>
       <div class="pk"><span>Difficulty</span><button data-diff="easy">Easy</button><button data-diff="normal">Normal</button><button data-diff="hard">Hard</button></div>
       <div class="pk"><span>Body</span><button data-body="male">Male</button><button data-body="female">Female</button></div>
       <div class="pk"><span>Outfit</span><button id="outPrev" aria-label="Previous outfit">◀</button><b id="outName"></b><button id="outNext" aria-label="Next outfit">▶</button></div>
@@ -1285,6 +1289,7 @@ function renderPicker() {
   document.querySelectorAll('[data-body]').forEach(b => b.classList.toggle('on', b.dataset.body === playerLook.body));
   document.querySelectorAll('[data-diff]').forEach(b => b.classList.toggle('on', b.dataset.diff === difficulty));
   document.querySelectorAll('[data-arena]').forEach(b => b.classList.toggle('on', b.dataset.arena === arenaChoice));
+  document.querySelectorAll('[data-wild]').forEach(b => b.classList.toggle('on', (b.dataset.wild === '1') === wildOn));
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === playerMode));
   document.getElementById('p2hint').classList.toggle('hidden', !isTwoP());
   renderLadderInfo();
@@ -1297,6 +1302,9 @@ function renderPicker() {
 }
 function lookChanged() { try { localStorage.setItem('aoe-look', JSON.stringify(playerLook)); } catch (e) {} renderPicker(); rebuildPreview(); }
 document.querySelectorAll('[data-body]').forEach(b => b.addEventListener('click', () => { if (playerLook.body !== b.dataset.body) { playerLook.body = b.dataset.body; playerLook.hair = 0; lookChanged(); } }));
+document.querySelectorAll('[data-wild]').forEach(b => b.addEventListener('click', () => {
+  wildOn = b.dataset.wild === '1'; try { localStorage.setItem('aoe-wild', wildOn ? '1' : '0'); } catch (e) {} renderPicker();
+}));
 document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
   playerMode = b.dataset.mode; try { localStorage.setItem('aoe-mode', playerMode); } catch (e) {} renderPicker();
 }));
@@ -1317,7 +1325,7 @@ document.getElementById('swatches').addEventListener('click', (e) => { const i =
 function clearMatch() {
   for (const f of fighters) { scene.remove(f.mesh.root); f.label.remove(); }
   fighters = []; human = null; p2 = null; clearProjectiles(); storms = []; endPractice(); matchUlts = 0;
-  ladderMatch = -1; matchDiff = 'normal'; endMvp = null; endRevealT = 0; endChampion = false;
+  ladderMatch = -1; matchDiff = 'normal'; endMvp = null; endRevealT = 0; endChampion = false; resetWild();
   document.getElementById('toasts').innerHTML = '';
   document.getElementById('p2hud').classList.add('hidden');
 }
@@ -1485,7 +1493,7 @@ function startMatch(el) {
 }
 const NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 function resetRound() {
-  F = [0, 0]; timer = ROUND_TIME; clearProjectiles(); roundWinner = -1; storms = [];
+  F = [0, 0]; timer = ROUND_TIME; clearProjectiles(); roundWinner = -1; storms = []; resetWild();
   for (const f of fighters) {
     f.out = false; f.falling = false; f.strain = 0; f.line = 0; f.vy = 0;
     f.kb.set(0, 0, 0); f.mv.set(0, 0, 0); f.cd.p = f.cd.s = f.cd.d = 0; f.dodgeT = f.stunT = 0; f.ult = 0;
@@ -2245,7 +2253,7 @@ function updateFighter(f, dt) {
   let vx = f.mv.x + f.kb.x, vz = f.mv.z + f.kb.z;
   if (f.dodgeT > 0) { f.dodgeT -= dt; vx += f.dodgeDir.x * 20; vz += f.dodgeDir.z * 20; }
   f.pos.x += vx * dt; f.pos.z += vz * dt;
-  f.kb.multiplyScalar(Math.exp(-3.2 * dt));
+  f.kb.multiplyScalar(Math.exp(-kbDecay * dt)); // lower during the Low Gravity event = longer slides
   const lim = HALF_W - FR;
   if (Math.abs(f.pos.z) > lim) { f.pos.z = Math.sign(f.pos.z) * lim; f.kb.z *= -0.4; }
   let d = depthOf(f);
@@ -2516,6 +2524,7 @@ const REWARDS = [
   { lvl: 1, title: 'Rookie' }, { lvl: 3, title: 'Contender' }, { lvl: 5, title: 'Brawler' }, { lvl: 8, title: 'Elementalist' },
   { lvl: 10, perk: 'Golden ring under your fighter' }, { lvl: 12, title: 'Master' }, { lvl: 16, title: 'Legend' },
 ];
+function cleanTitle(t) { return REWARDS.some(r => r.title === t) || t === '👑 Champion' ? t : ''; }
 function myTitle() {
   if (ladder.champion) return '👑 Champion';
   const lvl = levelInfo(career.xp).lvl; let t = 'Rookie';
@@ -2824,6 +2833,7 @@ function tick(dt, rdt) {
     for (const f of fighters) updateFighter(f, dt);
     pm('fighters+anim', t0); t0 = performance.now();
     separate(); updateProjectiles(dt); updateWalls(dt); updateStorms(dt); checkZones();
+    updateWild(dt);
     if (practice) updatePractice(dt); else checkRoundEnd();
     pm('projectiles', t0);
   } else if (state === 'roundEnd') {
@@ -2846,7 +2856,7 @@ function tick(dt, rdt) {
   front.position.x += (fx - front.position.x) * (1 - Math.exp(-6 * dt)); frontGlow.position.x = front.position.x;
   frontGlow.material.opacity = 0.6 + Math.sin(perfNow * 5) * 0.25;
   let t1 = performance.now();
-  GLOW.update(dt); SMOKE.update(dt); updateDebris(dt); updateRings(dt); updateFloats(rdt); updateBolts(rdt);
+  GLOW.update(dt); SMOKE.update(dt); updateDebris(dt); updateRings(dt); updateFloats(rdt); updateBolts(rdt); wildVisuals(dt, rdt);
   pm('particles', t1); t1 = performance.now();
   updateCamera(rdt);
   jbT -= rdt; if (jbT <= 0) { jbT = 0.25; drawJumbo(); }
@@ -2962,6 +2972,112 @@ function startSlow(f, final) {
 }
 function ringLocal(...a) { return (rpcFns.spawnRing || spawnRing)(...a); }
 
+// ================= ARENA EVENTS ("Wild" mode) =================
+// Every ~15 s: meteor shower, whirlwind, supercharge or low gravity. The host runs the effects on fighters;
+// the banner, countdown and particles run on every screen (eventNote is sent to online friends).
+let wildOn = false; try { wildOn = localStorage.getItem('aoe-wild') === '1'; } catch (e) {}
+let kbDecay = 3.2;
+const EVENTS = {
+  meteor: { name: '☄️ METEOR SHOWER', dur: 6, tip: 'Meteors incoming. Stay out of the red rings!' },
+  whirl:  { name: '🌀 WHIRLWIND', dur: 5, tip: 'Everyone is pulled toward the middle!' },
+  super:  { name: '⚡ SUPERCHARGE', dur: 6, tip: 'Abilities recharge twice as fast!' },
+  lowg:   { name: '🪶 LOW GRAVITY', dur: 8, tip: 'Hits send fighters sliding much further!' },
+};
+let wild = { t: 15, ev: null, left: 0, sub: 0 }, meteors = [], wildFx = null, EVENTS_FORCE = null;
+const meteorVis = [];
+const eventTagEl = document.getElementById('eventTag');
+const LOWG = C(0xc8b8ff, 0.9), LOWG_FADE = C(0x7a6aff, 0.2);
+const wildActive = () => wildOn && ladderMatch < 0 && !practice && NET.mode !== 'client';
+function resetWild() {
+  wild = { t: 8 + Math.random() * 4, ev: null, left: 0, sub: 0 }; meteors = []; kbDecay = 3.2; wildFx = null;
+  for (const m of meteorVis) scene.remove(m.g); meteorVis.length = 0; eventTagEl.classList.add('hidden');
+}
+function updateWild(dt) {
+  if (!wildActive()) return;
+  if (!wild.ev) {
+    wild.t -= dt; if (wild.t > 0) return;
+    const ids = Object.keys(EVENTS); wild.ev = EVENTS_FORCE || ids[(Math.random() * ids.length) | 0]; EVENTS_FORCE = null; wild.left = EVENTS[wild.ev].dur; wild.sub = 0.4;
+    eventNote(wild.ev, wild.left);
+  }
+  wild.left -= dt;
+  const ev = wild.ev;
+  if (ev === 'meteor') {
+    wild.sub -= dt;
+    if (wild.sub <= 0 && wild.left > 0.9) {
+      wild.sub = 0.5;
+      const act = fighters.filter(active), near = act.length && Math.random() < 0.6 ? act[(Math.random() * act.length) | 0] : null;
+      const pos = near ? v3(near.pos.x + rnd(3), 0, near.pos.z + rnd(3)) : v3(rnd(26), 0, rnd(13));
+      pos.x = THREE.MathUtils.clamp(pos.x, -14, 14); pos.z = THREE.MathUtils.clamp(pos.z, -7, 7);
+      meteors.push({ pos, t: 0.9 }); fxMeteorWarn(pos);
+    }
+  } else if (ev === 'whirl') {
+    for (const f of fighters) if (active(f)) { const to = v3(-f.pos.x, 0, -f.pos.z); if (to.lengthSq() > 0.25) f.kb.addScaledVector(to.normalize(), 9 * dt); }
+  } else if (ev === 'super') {
+    for (const f of fighters) if (active(f)) { for (const k in f.cd) f.cd[k] = Math.max(0, f.cd[k] - dt); f.ult = Math.min(100, f.ult + 4 * dt); }
+  }
+  kbDecay = ev === 'lowg' ? 1.9 : 3.2;
+  for (const m of meteors) {
+    m.t -= dt; if (m.t > 0) continue;
+    m.done = true; fxMeteor(m.pos);
+    for (const f of fighters) {
+      if (!active(f) || f.dodgeT > 0) continue;
+      const to = f.pos.clone().sub(m.pos); to.y = 0; const d = to.length();
+      if (d < 2.8) {
+        f.kb.addScaledVector(d > 0.2 ? to.normalize() : v3(f.side, 0, 0), 11 * (1 + f.strain / 55) * (1 - d / 4));
+        f.strain = Math.min(160, f.strain + 10); f.stunT = 0.3; f.flashT = 0.15; animF(f, 'hitB', 1.6); shakeFor(f, 0.4, 0);
+      }
+    }
+  }
+  meteors = meteors.filter(m => !m.done);
+  if (wild.left <= 0) { wild.ev = null; wild.t = 13 + Math.random() * 6; kbDecay = 3.2; eventNote(null, 0); }
+}
+// --- event visuals (every screen) ---
+function eventNote(id, dur) {
+  wildFx = id ? { id, left: dur } : null;
+  if (!id) return;
+  const E = EVENTS[id];
+  announce(E.name, '#ffd54a'); toast(E.tip, '#ffd54a'); horn(); crowdReact(0.8);
+}
+function fxMeteorWarn(pos) {
+  spawnRing(v3(pos.x, 0.12, pos.z), 0xff3020, 2.8, 2.2, 0.9, null, 0.9, 2);
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(GEO.sphere, MAT.fireCore); core.scale.setScalar(0.55); g.add(core);
+  const gl = new THREE.Sprite(MAT.fireGlow); gl.scale.setScalar(3.4); g.add(gl);
+  const from = v3(pos.x + 7, 26, pos.z - 5);
+  g.position.copy(from); scene.add(g);
+  meteorVis.push({ g, from, to: v3(pos.x, 0.4, pos.z), t: 0 });
+}
+function fxMeteor(pos) {
+  const p = v3(pos.x, 0.5, pos.z);
+  fxHit(p, 'fire', 20, v3(0, 1, 0));
+  spawnDebris(p, 10, 7, 0.2);
+  spawnRing(v3(pos.x, 0.1, pos.z), 0xff6a1a, 0.5, 4, 0.5, null, 0.9, 2);
+  for (let i = 0; i < 10; i++) SMOKE.emit(p, v3(rnd(4), 2 + Math.random() * 2, rnd(4)), COL.smoke, null, 1.6, 1.1, -0.5, 1.5, 1.5, 0.5);
+  sfx('hit', 'fire'); sfx('thunder');
+}
+function wildVisuals(dt) {
+  for (let i = meteorVis.length - 1; i >= 0; i--) {
+    const m = meteorVis[i]; m.t += dt / 0.9;
+    m.g.position.lerpVectors(m.from, m.to, Math.min(1, m.t));
+    if (Math.random() < 0.8) GLOW.emit(m.g.position, rv(1), COL.fireHot, COL.fireEnd, 0.9, 0.35, -2, 0.5);
+    if (m.t >= 1) { scene.remove(m.g); meteorVis.splice(i, 1); }
+  }
+  if (!wildFx) { eventTagEl.classList.add('hidden'); return; }
+  wildFx.left -= dt;
+  if (wildFx.left <= 0) { wildFx = null; return; }
+  eventTagEl.classList.remove('hidden'); eventTagEl.textContent = `${EVENTS[wildFx.id].name} · ${Math.ceil(wildFx.left)}s`;
+  if (wildFx.id === 'whirl') {
+    for (let i = 0; i < 3; i++) {
+      const a = Math.random() * 6.283, r = 1 + Math.random() * 12;
+      GLOW.emit(v3(Math.cos(a) * r, 0.3 + Math.random() * 2.5, Math.sin(a) * r * 0.55), v3(-Math.sin(a) * 6 - Math.cos(a) * 2, 0.4, (Math.cos(a) * 6 - Math.sin(a) * 2) * 0.55), COL.air, COL.airFade, 0.35, 0.6, 0, 1);
+    }
+  } else if (wildFx.id === 'super') {
+    for (const f of fighters) if (active(f) && Math.random() < 0.4) GLOW.emit(v3(f.pos.x + rnd(1), 0.3 + Math.random() * 2, f.pos.z + rnd(1)), v3(0, 2, 0), COL.spark, COL.sparkFade, 0.2, 0.4, 0, 0, 1);
+  } else if (wildFx.id === 'lowg') {
+    if (Math.random() < 0.6) GLOW.emit(v3(rnd(28), 0, rnd(15)), v3(rnd(0.3), 1.2 + Math.random(), rnd(0.3)), LOWG, LOWG_FADE, 0.25, 2.5, -0.2, 0);
+  }
+}
+
 // ---- "visual calls": the host records each effect call and friends replay it ----
 let rpcDepth = 0;
 const rpcFns = {};
@@ -2996,6 +3112,7 @@ fxClash = rpcWrap('fxClash', fxClash); hitNote = rpcWrap('hitNote', hitNote); sh
 ultNote = rpcWrap('ultNote', ultNote); outNote = rpcWrap('outNote', outNote); pushNote = rpcWrap('pushNote', pushNote);
 startSlow = rpcWrap('startSlow', startSlow); emoteShow = rpcWrap('emoteShow', emoteShow);
 fxBolt = rpcWrap('fxBolt', fxBolt); fxStrike = rpcWrap('fxStrike', fxStrike);
+eventNote = rpcWrap('eventNote', eventNote); fxMeteorWarn = rpcWrap('fxMeteorWarn', fxMeteorWarn); fxMeteor = rpcWrap('fxMeteor', fxMeteor);
 
 // ---- host: send the game state to everyone ~20x per second ----
 function netSendAll(msg) { for (const c of NET.conns.values()) if (c.open) { try { c.send(msg); } catch (e) {} } }
@@ -3162,7 +3279,7 @@ async function netHost() {
   NET.peer = new window.Peer('aoe-' + NET.code);
   NET.peer.on('open', () => {
     onMsgEl.textContent = '';
-    NET.lobby = [{ id: 'host', name: myName(), team: 0, el: previewEl, look: { ...playerLook } }];
+    NET.lobby = [{ id: 'host', name: myName(), team: 0, el: previewEl, look: { ...playerLook }, title: myTitle() }];
     showOnlineView(true); netLobbyBroadcast();
   });
   NET.peer.on('connection', (conn) => {
@@ -3187,7 +3304,7 @@ function hostOnData(conn, msg) {
     }
     const counts = [0, 1].map(t => NET.lobby.filter(p => p.team === t).length);
     const name = cleanName(msg.name);
-    NET.lobby.push({ id, name, team: counts[0] <= counts[1] ? 0 : 1, el: ORDER[(Math.random() * ORDER.length) | 0], look: cleanLook(msg.look) });
+    NET.lobby.push({ id, name, team: counts[0] <= counts[1] ? 0 : 1, el: ORDER[(Math.random() * ORDER.length) | 0], look: cleanLook(msg.look), title: cleanTitle(msg.title) });
     toast(`${name} joined the room`, '#7dff9a'); sfx('zone');
     netLobbyBroadcast();
   } else if (msg.k === 'pick') {
@@ -3234,7 +3351,7 @@ async function netJoin(rawCode) {
     NET.hostConn = conn;
     clearTimeout(NET.joinTimer);
     NET.joinTimer = setTimeout(() => { if (!conn.open && NET.mode === 'client') { netLeave(true); netError('Could not reach that room. Check the code, or the network may block direct connections.'); } }, 12000);
-    conn.on('open', () => { clearTimeout(NET.joinTimer); onMsgEl.textContent = ''; conn.send({ k: 'hello', name: myName(), look: playerLook }); showOnlineView(true); });
+    conn.on('open', () => { clearTimeout(NET.joinTimer); onMsgEl.textContent = ''; conn.send({ k: 'hello', name: myName(), look: playerLook, title: myTitle() }); showOnlineView(true); });
     conn.on('data', clientOnData);
     conn.on('close', () => { if (NET.mode === 'client' && NET.hostConn === conn) { netLeave(true); netError('The host closed the room.'); } });
   });
@@ -3251,7 +3368,7 @@ function clientOnData(msg) {
     renderLobby();
   } else if (msg.k === 'start' && Array.isArray(msg.roster)) {
     startOnlineMatch(msg.roster.map(r => ({ team: r.team === 1 ? 1 : 0, slot: clampInt(r.slot, 0, 2), el: ORDER.includes(r.el) ? r.el : 'fire',
-      look: cleanLook(r.look), owner: r.owner ? String(r.owner) : null, name: r.name ? cleanName(r.name) : null })), THEMES[msg.theme] ? msg.theme : 'night');
+      look: cleanLook(r.look), owner: r.owner ? String(r.owner) : null, name: r.name ? cleanName(r.name) : null, title: cleanTitle(r.title) })), THEMES[msg.theme] ? msg.theme : 'night');
   } else if (msg.k === 's') netApplySnap(msg);
   else if (msg.k === 'end' && Array.isArray(msg.stats)) {
     msg.stats.forEach((s, i) => { const f = fighters[i]; if (f && Array.isArray(s)) { f.stats.hits = +s[0] || 0; f.stats.kos = +s[1] || 0; f.stats.outs = +s[2] || 0; } });
@@ -3270,7 +3387,7 @@ function netHostStart() {
     const hs = NET.lobby.filter(p => p.team === t).slice(0, 3);
     for (const slot of [1, 0, 2]) {
       const h = hs.shift();
-      if (h) roster.push({ team: t, slot, el: h.el, look: { ...h.look }, owner: h.id, name: h.name });
+      if (h) roster.push({ team: t, slot, el: h.el, look: { ...h.look }, owner: h.id, name: h.name, title: h.title || '' });
       else { const el = ORDER[(Math.random() * ORDER.length) | 0]; roster.push({ team: t, slot, el, look: randomLook(el, t, used), owner: null, name: null }); }
     }
   }
@@ -3288,6 +3405,7 @@ function startOnlineMatch(roster, theme) {
     f.owner = r.owner; f.netName = r.owner ? r.name : null;
     f.remote = NET.mode === 'host' && !!r.owner && !mine;
     if (r.owner) f.label.querySelector('span').textContent = `${mine ? 'YOU' : r.name.toUpperCase()} · ${ELEMENTS[r.el].name.toUpperCase()}`;
+    if (r.owner && !mine && r.title) { const t = document.createElement('small'); t.className = 'ttl'; t.textContent = r.title; f.label.prepend(t); }
     fighters.push(f);
   }
   human = fighters.find(f => f.human) || null; p2 = null; roundLog = [];
@@ -3407,7 +3525,7 @@ loadLooks((d, n) => {
 });
 
 // test hook
-window.__game = { get state() { return state; }, get fighters() { return fighters; }, get F() { return F; }, get wins() { return wins; }, get round() { return round; }, startMatch,
+window.__game = { get state() { return state; }, get fighters() { return fighters; }, get F() { return F; }, get wins() { return wins; }, get round() { return round; }, startMatch, wildForce(id) { wild.t = 0; wild.ev = null; EVENTS_FORCE = id; },
   step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) { pollP2(); advance(1 / 60); } updateTopUI(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
   prof: PROF, pollPad, fx: { bolt: (a, b, big) => fxBolt(new THREE.Vector3(...a), new THREE.Vector3(...b), big), render: () => composer.render() } };
 </script>
