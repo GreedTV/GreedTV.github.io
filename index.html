@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>// the game moved: send the old GitHub address to the new one (keeps room codes and other parts of the link)
+if (location.hostname === 'greedtv.github.io') location.replace('https://arena-of-elements.netlify.app' + location.pathname + location.search + location.hash);</script>
+<link rel="canonical" href="https://arena-of-elements.netlify.app/">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Arena of Elements</title>
 <meta name="description" content="3v3 elemental arena game in your browser. Pick Fire, Water, Earth or Air, push the other team back across the zones and knock them into the water.">
@@ -13,8 +16,8 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Arena of Elements">
 <meta property="og:description" content="3v3 elemental arena game — free to play in your browser, on PC or phone.">
-<meta property="og:url" content="https://greedtv.github.io/">
-<meta property="og:image" content="https://greedtv.github.io/og.png">
+<meta property="og:url" content="https://arena-of-elements.netlify.app/">
+<meta property="og:image" content="https://arena-of-elements.netlify.app/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='20' r='14' fill='%23ff7a2f'/%3E%3Ccircle cx='44' cy='20' r='14' fill='%234fc0ff'/%3E%3Ccircle cx='20' cy='44' r='14' fill='%23c49a6c'/%3E%3Ccircle cx='44' cy='44' r='14' fill='%23e8f6ff'/%3E%3C/svg%3E">
 <style>
@@ -2401,7 +2404,7 @@ function revealEnd() {
   if (endChampion) { announce('CHAMPION!', '#ffd54a'); flash(0.4); }
 }
 // share your result (phone share sheet, or copy to clipboard on PC)
-const GAME_URL = location.hostname.endsWith('github.io') ? location.origin + location.pathname : 'https://greedtv.github.io/';
+const GAME_URL = 'https://arena-of-elements.netlify.app/';
 document.getElementById('shareBtn').onclick = async () => {
   const btn = document.getElementById('shareBtn');
   const myTeam = human ? human.team : 0, won = wins[myTeam] > wins[1 - myTeam], E = ELEMENTS[human ? human.el : chosenEl];
