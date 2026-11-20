@@ -315,7 +315,8 @@
   <div class="menuBottom">
     <div id="loading"><span id="loadText">Loading fighters…</span><div id="loadbar"><i></i></div></div>
     <div id="picker" class="hidden">
-      <div class="pk"><span>Players</span><button data-mode="solo">Solo</button><button data-mode="coop">2P Co-op</button><button data-mode="vs">2P Versus</button><button data-mode="practice">🎯 Practice</button><button id="onlineBtn" class="onl">🌐 Online</button></div>
+      <div class="pk"><span>Players</span><button data-mode="solo">Solo</button><button data-mode="coop">2P Co-op</button><button data-mode="vs">2P Versus</button><button data-mode="practice">🎯 Practice</button><button data-mode="ladder">🏆 Ladder</button><button id="onlineBtn" class="onl">🌐 Online</button></div>
+      <div class="pk hidden" id="ladderInfo" style="font-size:13px"></div>
       <div class="pk hidden" id="p2hint" style="font-size:12px;color:var(--muted)">Player 2: a controller, or <b style="color:var(--text)">arrow keys</b> + <b style="color:var(--text)">Enter</b> attack · <b style="color:var(--text)">Right Shift</b> special · <b style="color:var(--text)">Right Ctrl</b> dodge · <b style="color:var(--text)">/</b> ultimate</div>
       <div class="pk"><span>Arena</span><button data-arena="night">Night</button><button data-arena="sunset">Sunset</button><button data-arena="day">Day</button><button data-arena="random">🎲</button></div>
       <div class="pk"><span>Difficulty</span><button data-diff="easy">Easy</button><button data-diff="normal">Normal</button><button data-diff="hard">Hard</button></div>
@@ -338,6 +339,7 @@
   <div class="row">
     <button class="btn" id="again">Play again</button>
     <button class="btn" id="change">Change element</button>
+    <button class="btn ghost" id="shareBtn" type="button">📤 Share</button>
   </div>
 </div>
 
@@ -1261,7 +1263,7 @@ const DIFFS = {
   hard:   { name: 'Hard',   skill: [0.85, 1.05], dodge: 0.55, aggr: 0.65 },
 };
 let playerMode = 'solo', p2 = null, roundLog = [];
-try { const m = localStorage.getItem('aoe-mode'); if (['solo', 'coop', 'vs', 'practice'].includes(m)) playerMode = m; } catch (e) {}
+try { const m = localStorage.getItem('aoe-mode'); if (['solo', 'coop', 'vs', 'practice', 'ladder'].includes(m)) playerMode = m; } catch (e) {}
 function isTwoP() { return playerMode === 'coop' || playerMode === 'vs'; }
 let difficulty = 'normal';
 try { const d = localStorage.getItem('aoe-diff'); if (DIFFS[d]) difficulty = d; } catch (e) {}
@@ -1281,6 +1283,7 @@ function renderPicker() {
   document.querySelectorAll('[data-arena]').forEach(b => b.classList.toggle('on', b.dataset.arena === arenaChoice));
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === playerMode));
   document.getElementById('p2hint').classList.toggle('hidden', !isTwoP());
+  renderLadderInfo();
   const st = HAIR_STYLES[playerLook.body];
   playerLook.hair = ((playerLook.hair % st.length) + st.length) % st.length;
   document.getElementById('hairName').textContent = st[playerLook.hair].name;
@@ -1310,6 +1313,7 @@ document.getElementById('swatches').addEventListener('click', (e) => { const i =
 function clearMatch() {
   for (const f of fighters) { scene.remove(f.mesh.root); f.label.remove(); }
   fighters = []; human = null; p2 = null; clearProjectiles(); storms = []; endPractice(); matchUlts = 0;
+  ladderMatch = -1; matchDiff = 'normal';
   document.getElementById('toasts').innerHTML = '';
   document.getElementById('p2hud').classList.add('hidden');
 }
@@ -1413,24 +1417,51 @@ function endPractice() { practice = null; document.getElementById('practicePanel
 document.getElementById('prMenu').addEventListener('click', () => quitToMenu());
 document.getElementById('prKeep').addEventListener('click', () => document.getElementById('practicePanel').classList.add('hidden'));
 
+// ================= LADDER: 5 stages in a row, each harder =================
+const LADDER = [
+  { name: 'Rookie Ring',  diff: 'easy',   arena: 'night',  red: null },
+  { name: 'Rising Tide',  diff: 'normal', arena: 'sunset', red: ['water', 'water', 'air'] },
+  { name: 'Stone Wall',   diff: 'normal', arena: 'day',    red: ['earth', 'earth', 'fire'] },
+  { name: 'Storm Front',  diff: 'hard',   arena: 'night',  red: ['lightning', 'air', 'water'] },
+  { name: 'Grand Final',  diff: 'hard',   arena: 'sunset', red: ['fire', 'lightning', 'earth'], boost: true },
+];
+let ladder = { stage: 0, champion: false };
+try { const l = JSON.parse(localStorage.getItem('aoe-ladder')); if (l && Number.isInteger(l.stage)) ladder = { stage: Math.max(0, Math.min(5, l.stage)), champion: !!l.champion }; } catch (e) {}
+function saveLadder() { try { localStorage.setItem('aoe-ladder', JSON.stringify(ladder)); } catch (e) {} }
+function ladderStage() { if (ladder.stage >= LADDER.length) { ladder.stage = 0; saveLadder(); } return ladder.stage; } // after clearing all 5, a new run begins
+let ladderMatch = -1, matchDiff = 'normal';
+function renderLadderInfo() {
+  const el = document.getElementById('ladderInfo');
+  el.classList.toggle('hidden', playerMode !== 'ladder');
+  if (playerMode !== 'ladder') return;
+  const i = Math.min(ladder.stage, LADDER.length - 1), st = LADDER[ladder.stage >= LADDER.length ? 0 : i];
+  const n = ladder.stage >= LADDER.length ? 1 : i + 1;
+  const foes = st.red ? st.red.map(e => ELEMENTS[e].icon).join('') : '❔❔❔';
+  el.innerHTML = `<span>Ladder</span><b>Stage ${n}/5: ${st.name}</b> · ${DIFFS[st.diff].name}${st.boost ? '+' : ''} · ${THEMES[st.arena].name} arena · enemies ${foes}${ladder.champion ? ' · 👑 Champion' : ''}`;
+}
+
 function startMatch(el) {
   if (playerMode === 'practice' && NET.mode === 'off') return startPractice(el);
   endPractice();
   initAudio();
   chosenEl = el; clearMatch();
+  ladderMatch = playerMode === 'ladder' && NET.mode === 'off' ? ladderStage() : -1;
+  const stage = ladderMatch >= 0 ? LADDER[ladderMatch] : null;
   const mates = shuffle(ORDER.filter(e => e !== el)).slice(0, 2);
-  const blue = [el, ...mates], red = shuffle(ORDER).slice(0, 3);
+  const blue = [el, ...mates], red = stage && stage.red ? shuffle(stage.red) : shuffle(ORDER).slice(0, 3);
   removePreview();
-  applyTheme(arenaChoice === 'random' ? Object.keys(THEMES)[(Math.random() * 3) | 0] : arenaChoice);
+  applyTheme(stage ? stage.arena : arenaChoice === 'random' ? Object.keys(THEMES)[(Math.random() * 3) | 0] : arenaChoice);
   const used = new Set([lookKey(playerLook)]);
   // Solo: you + 2 computer teammates. Co-op: Player 2 takes blue slot 2. Versus: Player 2 leads the red team (middle slot).
   const coop = playerMode === 'coop', vs = playerMode === 'vs';
   fighters.push(makeFighter(0, blue[0], 1, true, playerLook),
     makeFighter(0, blue[1], 0, false, randomLook(blue[1], 0, used)), makeFighter(0, blue[2], 2, false, randomLook(blue[2], 0, used), coop));
   red.forEach((e, i) => fighters.push(makeFighter(1, e, i, false, randomLook(e, 1, used), vs && i === 1)));
-  const D = DIFFS[vs ? 'normal' : difficulty]; // in Versus, Player 2's computer teammates play at Normal
+  matchDiff = stage ? stage.diff : vs ? 'normal' : difficulty; // in Versus, Player 2's computer teammates play at Normal
+  const D = DIFFS[matchDiff];
   for (const f of fighters) if (f.team === 1) {
     f.ai.skill = D.skill[0] + Math.random() * (D.skill[1] - D.skill[0]); f.ai.dodge = D.dodge; f.ai.aggr = D.aggr;
+    if (stage && stage.boost) { f.ai.skill += 0.1; f.ai.dodge += 0.1; f.ai.aggr *= 0.85; } // the Grand Final champions
   }
   human = fighters[0];
   p2 = fighters.find(f => f.p2) || null;
@@ -1465,8 +1496,15 @@ function resetRound() {
   document.getElementById('spectate').classList.add('hidden');
   state = 'intro'; stateT = INTRO_TIME; skipIntro = false;
   document.getElementById('skip').classList.remove('hidden');
-  announce(`ROUND ${round}`, '#ffd54a');
-  say(`Round ${NUM[round] || round}`);
+  if (ladderMatch >= 0 && round === 1) {
+    announce(`STAGE ${ladderMatch + 1}: ${LADDER[ladderMatch].name.toUpperCase()}`, '#ffd54a');
+    say(`Stage ${NUM[ladderMatch + 1]}. ${LADDER[ladderMatch].name}`);
+    document.getElementById('round').textContent = `STAGE ${ladderMatch + 1}/5 · ROUND 1`;
+  } else {
+    announce(`ROUND ${round}`, '#ffd54a');
+    say(`Round ${NUM[round] || round}`);
+    if (ladderMatch >= 0) document.getElementById('round').textContent = `STAGE ${ladderMatch + 1}/5 · ROUND ${round}`;
+  }
   crowdReact(0.6);
 }
 
@@ -2306,12 +2344,24 @@ function showEnd() {
   const won = wins[myTeam] > wins[1 - myTeam];
   roundWinner = wins[0] > wins[1] ? 0 : 1;
   if (NET.mode === 'host') netSendAll({ k: 'end', stats: fighters.map(f => [f.stats.hits, f.stats.kos, f.stats.outs]), w: wins, rl: roundLog });
-  document.getElementById('again').textContent = online ? 'Back to lobby' : 'Play again';
+  let ladderNote = '';
+  if (ladderMatch >= 0) {
+    if (won) {
+      ladder.stage = Math.max(ladder.stage, ladderMatch + 1);
+      if (ladderMatch === LADDER.length - 1) { ladder.champion = true; ladderNote = '👑 LADDER CHAMPION! You beat all 5 stages.'; }
+      else ladderNote = `🏆 Stage ${ladderMatch + 1} cleared! Next: ${LADDER[ladderMatch + 1].name}`;
+    } else ladderNote = `Stage ${ladderMatch + 1}: ${LADDER[ladderMatch].name}. Try again!`;
+    saveLadder(); renderLadderInfo();
+  }
+  document.getElementById('again').textContent = online ? 'Back to lobby'
+    : ladderMatch >= 0 ? (won ? (ladderMatch === LADDER.length - 1 ? 'New ladder run' : `Next: Stage ${ladderMatch + 2}`) : 'Retry stage') : 'Play again';
   document.getElementById('again').classList.toggle('hidden', NET.mode === 'client');
   document.getElementById('change').textContent = online ? 'Leave room' : 'Change element';
   for (const f of fighters) { if (!f.out) continue; f.out = false; f.falling = false; f.pos.set(f.side * 3, 0, (f.slot - 1) * 4.5); f.mesh.root.visible = true; f.mesh.root.rotation.set(0, 0, 0); }
   document.getElementById('endTitle').textContent = playerMode === 'vs' && !online ? (won ? 'PLAYER 1 WINS' : 'PLAYER 2 WINS') : won ? 'VICTORY' : 'DEFEAT';
-  document.getElementById('endSub').textContent = `Blue ${wins[0]} – ${wins[1]} Red · ${online ? '🌐 Online' : DIFFS[difficulty].name}`;
+  document.getElementById('endSub').textContent = ladderMatch >= 0 ? `Blue ${wins[0]} – ${wins[1]} Red · ${ladderNote}`
+    : `Blue ${wins[0]} – ${wins[1]} Red · ${online ? '🌐 Online' : DIFFS[matchDiff].name}`;
+  if (ladderMatch >= 0 && won && ladderMatch === LADDER.length - 1) { announce('CHAMPION!', '#ffd54a'); flash(0.4); }
   // match stats + MVP (knock-outs count most, then hits; falling out costs a little)
   const score = (f) => f.stats.kos * 3 + f.stats.hits * 0.2 - f.stats.outs;
   const mvp = fighters.reduce((a, b) => score(b) > score(a) ? b : a);
@@ -2336,6 +2386,18 @@ function showEnd() {
   say(won ? 'Victory! Blue team wins the match!' : 'Red team wins the match!');
   mouseDown = false;
 }
+// share your result (phone share sheet, or copy to clipboard on PC)
+const GAME_URL = location.hostname.endsWith('github.io') ? location.origin + location.pathname : 'https://greedtv.github.io/';
+document.getElementById('shareBtn').onclick = async () => {
+  const btn = document.getElementById('shareBtn');
+  const myTeam = human ? human.team : 0, won = wins[myTeam] > wins[1 - myTeam], E = ELEMENTS[human ? human.el : chosenEl];
+  const where = ladderMatch >= 0 ? ` (Ladder stage ${ladderMatch + 1}: ${LADDER[ladderMatch].name})` : NET.mode !== 'off' ? ' online' : '';
+  const text = `${won ? 'I won' : 'I lost'} ${wins[myTeam]}–${wins[1 - myTeam]} as ${E.icon} ${E.name} in Arena of Elements${where}! Can you beat that?`;
+  if (navigator.share) { try { await navigator.share({ title: 'Arena of Elements', text, url: GAME_URL }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(`${text} Play free: ${GAME_URL}`); btn.textContent = '✓ Copied!'; }
+  catch (e) { btn.textContent = 'Could not copy'; }
+  setTimeout(() => { btn.textContent = '📤 Share'; }, 2000);
+};
 document.getElementById('again').onclick = () => { if (NET.mode === 'host') netBackToLobby(); else startMatch(chosenEl); };
 document.getElementById('change').onclick = () => { if (NET.mode !== 'off') { netLeave(); return; } document.getElementById('end').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); clearMatch(); state = 'menu'; previewEl = chosenEl; rebuildPreview(); };
 
@@ -2445,13 +2507,15 @@ const ACH = [
   { id: 'lvl5', icon: '⭐', name: 'Rising Star', desc: 'Reach level 5' },
   { id: 'lvl10', icon: '🌟', name: 'Champion', desc: 'Reach level 10' },
   { id: 'coop', icon: '🤝', name: 'Team Player', desc: 'Win a 2P co-op match' },
+  { id: 'champ', icon: '👑', name: 'Champion', desc: 'Beat all 5 Ladder stages' },
 ];
 function checkAchievements(won) {
   career.ach = career.ach || {};
   const s = human.stats, lvl = levelInfo(career.xp).lvl;
   const test = {
     first: won, hat: s.kos >= 3, untouch: won && s.outs === 0, comeback: won && roundLog[0] === 1,
-    hard: won && difficulty === 'hard' && playerMode === 'solo' && NET.mode === 'off', all4: ORDER.every(e => (career.elemWins || {})[e] > 0),
+    champ: won && ladderMatch === LADDER.length - 1,
+    hard: won && matchDiff === 'hard' && (playerMode === 'solo' || playerMode === 'ladder') && NET.mode === 'off', all4: ORDER.every(e => (career.elemWins || {})[e] > 0),
     ult10: career.ultimates >= 10, streak3: career.streak >= 3, hits1000: career.hits >= 1000,
     lvl5: lvl >= 5, lvl10: lvl >= 10, coop: won && (playerMode === 'coop' && NET.mode === 'off' || NET.mode !== 'off' && fighters.some(f => f !== human && f.owner && f.team === human.team)),
   };
@@ -2510,7 +2574,7 @@ renderDaily();
 
 function recordMatch(won) {
   if (!human || !human.human) return null; // only real player matches count
-  const s = human.stats, mult = { easy: 0.75, normal: 1, hard: 1.5 }[playerMode === 'vs' || NET.mode !== 'off' ? 'normal' : difficulty];
+  const s = human.stats, mult = { easy: 0.75, normal: 1, hard: 1.5 }[NET.mode !== 'off' ? 'normal' : matchDiff];
   if (won) { career.elemWins = career.elemWins || {}; career.elemWins[human.el] = (career.elemWins[human.el] || 0) + 1; }
   const xp = Math.round((50 + (won ? 100 : 0) + s.kos * 25 + s.hits * 2) * mult);
   const before = levelInfo(career.xp).lvl;
@@ -2518,8 +2582,8 @@ function recordMatch(won) {
   career.kos += s.kos; career.hits += s.hits; career.outs += s.outs;
   career.streak = won ? career.streak + 1 : 0; career.bestStreak = Math.max(career.bestStreak, career.streak);
   career.xp += xp;
-  const dailyDone = checkDaily({ won, el: human.el, kos: s.kos, hits: s.hits, outs: s.outs, ults: matchUlts, diff: difficulty,
-    solo: playerMode === 'solo' && NET.mode === 'off', theme: currentTheme, friends: NET.mode !== 'off' || isTwoP() });
+  const dailyDone = checkDaily({ won, el: human.el, kos: s.kos, hits: s.hits, outs: s.outs, ults: matchUlts, diff: matchDiff,
+    solo: (playerMode === 'solo' || playerMode === 'ladder') && NET.mode === 'off', theme: currentTheme, friends: NET.mode !== 'off' || isTwoP() });
   career.xp += dailyDone.length * DAILY_XP;
   const fresh = checkAchievements(won);
   saveCareer(); renderCareerChip(); renderDaily();

@@ -10,6 +10,9 @@ Works on PC and on phones/tablets (on-screen joystick and buttons, attacks auto-
 Choose **Easy / Normal / Hard** on the menu, customise your fighter (body, outfit, hair), and use
 **⚙️ Settings** for volume, announcer voice, graphics level and a frame-rate counter.
 
+**🏆 Ladder:** five stages in a row — Rookie Ring, Rising Tide, Stone Wall, Storm Front and the Grand Final —
+each harder, with its own arena and enemy team. Progress is saved; beat all five to become 👑 Champion.
+
 **🎯 Practice:** pick *Practice* under Players for a training room — 3 dummies that don't fight back, no timer,
 and a step-by-step guide through moving, attacking, specials, dodging, ultimates and ring-outs.
 
