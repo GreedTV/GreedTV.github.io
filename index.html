@@ -812,9 +812,10 @@ const THEMES = {
 };
 let arenaChoice = 'night', currentTheme = 'night';
 try { const a = localStorage.getItem('aoe-arena'); if (THEMES[a] || a === 'random') arenaChoice = a; } catch (e) {}
+const skyCache = {};
 function applyTheme(name) {
   const T = THEMES[name] || THEMES.night; currentTheme = name;
-  scene.background = skyTex(...T.sky);
+  scene.background = skyCache[name] || (skyCache[name] = skyTex(...T.sky)); // one sky per theme, made once
   scene.fog.color.set(T.fog); scene.fog.near = T.fogNear; scene.fog.far = T.fogNear + 120;
   hemi.color.set(T.hemi[0]); hemi.groundColor.set(T.hemi[1]); hemi.intensity = T.hemi[2];
   sun.color.set(T.sun[0]); sun.intensity = T.sun[1]; sun.position.set(...T.sunPos);
@@ -1250,6 +1251,20 @@ function makeFighterMesh(teamIdx, elKey, look) {
   inner.rotation.x = -Math.PI / 2; inner.position.y = 0.065; root.add(inner);
   return { root, model, mats, teamCol, hands, mixer, actions, cur: null, base: 'idle', baseSpeed: 1, oneShot: null, oneT: 0, ring, powT: 0 };
 }
+// Free a fighter's GPU memory when it leaves for good: each skinned part has its own bone texture, the two rings
+// under its feet are its own shapes, and its materials are per-fighter copies (the image textures are shared and stay).
+let SHARED_MATS = null;
+function disposeFighterMesh(m) {
+  if (!m) return;
+  SHARED_MATS = SHARED_MATS || new Set(Object.values(MAT));
+  m.mixer.stopAllAction(); m.mixer.uncacheRoot(m.model);
+  m.root.traverse(o => {
+    if (o.isSkinnedMesh && o.skeleton) o.skeleton.dispose();
+    const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    for (const mt of ms) if (!SHARED_MATS.has(mt)) mt.dispose();
+  });
+  for (const c of m.root.children) if (c.geometry && /^(Ring|Cone)Geometry$/.test(c.geometry.type)) c.geometry.dispose(); // its own rings + player arrow
+}
 function animSwitch(m, name, fade = 0.15) {
   const next = m.actions[name]; if (!next) return;
   const prev = m.cur && m.actions[m.cur];
@@ -1323,7 +1338,7 @@ try { const d = localStorage.getItem('aoe-diff'); if (DIFFS[d]) difficulty = d; 
 const lookKey = (l) => l.body + l.hair + '-' + l.hairColor + '-' + l.outfit;
 let preview = null, previewEl = 'fire', looksReady = false, previewMoveT = 2;
 const menuLight = new THREE.PointLight(0xfff2e0, 40, 0, 2); menuLight.position.set(2.5, 3.2, 4); menuLight.visible = false; scene.add(menuLight);
-function removePreview() { menuLight.visible = false; if (preview) { scene.remove(preview.root); preview = null; } }
+function removePreview() { menuLight.visible = false; if (preview) { scene.remove(preview.root); disposeFighterMesh(preview); preview = null; } }
 function rebuildPreview() {
   removePreview();
   if (!looksReady || state !== 'menu') return;
@@ -1368,7 +1383,7 @@ document.getElementById('outNext').addEventListener('click', () => stepOutfit(1)
 document.getElementById('swatches').addEventListener('click', (e) => { const i = e.target.dataset.hc; if (i !== undefined) { playerLook.hairColor = +i; lookChanged(); } });
 
 function clearMatch() {
-  for (const f of fighters) { scene.remove(f.mesh.root); f.label.remove(); }
+  for (const f of fighters) { scene.remove(f.mesh.root); disposeFighterMesh(f.mesh); f.label.remove(); }
   fighters = []; human = null; p2 = null; clearProjectiles(); storms = []; endPractice(); matchUlts = 0;
   ladderMatch = -1; matchDiff = 'normal'; endMvp = null; endRevealT = 0; endChampion = false; resetWild();
   document.getElementById('toasts').innerHTML = '';
@@ -3566,6 +3581,7 @@ loadLooks((d, n) => {
 if (window.__moved) setTimeout(() => toast('✓ Your saved progress moved over from the old address', '#7dff9a'), 1500);
 window.__game = { get state() { return state; }, get fighters() { return fighters; }, get F() { return F; }, get wins() { return wins; }, get round() { return round; }, startMatch, wildForce(id) { wild.t = 0; wild.ev = null; EVENTS_FORCE = id; },
   step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) { pollP2(); advance(1 / 60); } updateTopUI(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
+  counts: () => ({ geo: renderer.info.memory.geometries, tex: renderer.info.memory.textures, progs: renderer.info.programs?.length, heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) : null, scene: scene.children.length, proj: projectiles.length, walls: walls.length, storms: storms.length, floats: floats.length, debris: debris.length, rings: rings.length, bolts: bolts.length, meteors: meteorVis.length, labels: document.getElementById("labels")?.children.length, timer, mode: playerMode }),
   prof: PROF, pollPad, fx: { bolt: (a, b, big) => fxBolt(new THREE.Vector3(...a), new THREE.Vector3(...b), big), render: () => composer.render() } };
 </script>
 </body>

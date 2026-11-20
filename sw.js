@@ -1,7 +1,7 @@
 // Offline support for Arena of Elements.
 // - Page + game code: network first (always get the newest version when online), cache as fallback.
 // - Models, icons, and the three.js library from the CDN: cache first, refreshed in the background.
-const CACHE = 'aoe-v14';
+const CACHE = 'aoe-v15';
 const CORE = [
   './', 'index.html', 'looks.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
   'models/quaternius/Anims.glb', 'models/quaternius/Superhero_Male_FullBody.glb', 'models/quaternius/Superhero_Female_FullBody.glb',
