@@ -2,8 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<script>// the game moved: send the old GitHub address to the new one (keeps room codes and other parts of the link)
-if (location.hostname === 'greedtv.github.io') location.replace('https://arena-of-elements.netlify.app' + location.pathname + location.search + location.hash);</script>
+<script>// The game moved from greedtv.github.io to Netlify. Saved progress lives per address, so the old address packs it
+// into the link's #fragment (never sent to any server) and the new address unpacks it once. The player name is not moved.
+(() => {
+  const KEYS = ['aoe-quality', 'aoe-look', 'aoe-settings', 'aoe-diff', 'aoe-arena', 'aoe-mode', 'aoe-career', 'aoe-daily', 'aoe-ladder', 'aoe-howto-seen', 'aoe-wild'];
+  if (location.hostname === 'greedtv.github.io') {
+    let h = location.hash;
+    try {
+      const d = {}; for (const k of KEYS) { const v = localStorage.getItem(k); if (v !== null) d[k] = v; }
+      if (d['aoe-career'] && !h) h = '#move=' + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(d)))));
+    } catch (e) {}
+    location.replace('https://arena-of-elements.netlify.app' + location.pathname + location.search + h);
+  } else if (location.hash.startsWith('#move=')) {
+    try {
+      const d = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(location.hash.slice(6))))));
+      if (!localStorage.getItem('aoe-career')) { // only into a fresh browser: never overwrite progress made here
+        for (const k of KEYS) if (typeof d[k] === 'string' && d[k].length < 5000 && !/[<>&]/.test(d[k])) localStorage.setItem(k, d[k]);
+        window.__moved = true;
+      }
+    } catch (e) {}
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+})();</script>
 <link rel="canonical" href="https://arena-of-elements.netlify.app/">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Arena of Elements</title>
@@ -260,6 +280,15 @@ if (location.hostname === 'greedtv.github.io') location.replace('https://arena-o
     .menu .card h3 { font-size: 14px; margin: 2px 0 0; }
     .menu .card .icon { font-size: 22px; }
     .menuBottom > p { font-size: 11px !important; }
+  }
+  @media (max-width: 560px) { /* phones held upright: wrap long rows instead of running off the screen */
+    .menuBottom { width: 100%; }
+    .menuBottom > * { max-width: 100%; }
+    .pk { flex-wrap: wrap; justify-content: center; row-gap: 4px; }
+    .pk button { padding: 4px 8px; }
+    .menu .cards { grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; gap: 4px; }
+    .menu .card { padding: 6px 1px; } .menu .card h3 { font-size: 10px; }
+    .menuTop { margin-top: 66px; }
   }
   @media (max-width: 1000px) {
     #help { display: none; }
@@ -3516,6 +3545,7 @@ loadLooks((d, n) => {
 });
 
 // test hook
+if (window.__moved) setTimeout(() => toast('✓ Your saved progress moved over from the old address', '#7dff9a'), 1500);
 window.__game = { get state() { return state; }, get fighters() { return fighters; }, get F() { return F; }, get wins() { return wins; }, get round() { return round; }, startMatch, wildForce(id) { wild.t = 0; wild.ev = null; EVENTS_FORCE = id; },
   step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) { pollP2(); advance(1 / 60); } updateTopUI(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
   prof: PROF, pollPad, fx: { bolt: (a, b, big) => fxBolt(new THREE.Vector3(...a), new THREE.Vector3(...b), big), render: () => composer.render() } };
