@@ -59,6 +59,9 @@
   .lbl .bar i { display: block; height: 100%; width: 0%; background: var(--gold); }
 
   #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  #danger { position: fixed; inset: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 140px 30px rgba(255, 30, 40, .85); }
+  #edgeWarn { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); color: #ff4a4a; font-weight: 900; font-size: 20px; letter-spacing: 3px; text-shadow: 0 0 12px rgba(255,40,40,.8), 0 2px 4px #000; }
+  body.touchmode #edgeWarn { bottom: 240px; }
   #announce { position: fixed; top: 34%; left: 0; right: 0; text-align: center; font-size: 64px; font-weight: 900; letter-spacing: 4px; pointer-events: none; text-shadow: 0 4px 20px rgba(0,0,0,.8); opacity: 0; }
   #announce.show { animation: pop 1.6s ease-out forwards; }
   @keyframes pop { 0% { opacity: 0; transform: scale(1.6); } 12% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: scale(.95); } }
@@ -120,6 +123,11 @@
   .tcol .pl.cpu { color: #5d6890; font-style: italic; }
   #onMsg { font-size: 13px; color: #ff9a8a; min-height: 1em; }
   .pk button.onl { border-color: rgba(125,255,154,.45); }
+  .dlist { display: flex; flex-direction: column; gap: 8px; }
+  .dch { display: flex; align-items: center; gap: 12px; background: #070b18; border-radius: 10px; padding: 10px 12px; border: 1px solid rgba(255,255,255,.08); }
+  .dch .ck { font-size: 20px; width: 26px; text-align: center; } .dch b { display: block; font-size: 14px; } .dch small { color: var(--gold); font-weight: 700; font-size: 12px; }
+  .dch.done { border-color: rgba(125,255,154,.45); } .dch.done b { color: #7dff9a; }
+  #endXp .daily { text-align: center; font-weight: 800; color: #9ad8ff; }
   .lvl { display: flex; align-items: center; gap: 10px; }
   .lvl b { color: var(--gold); font-size: 18px; white-space: nowrap; }
   .xpbar { flex: 1; height: 10px; background: rgba(0,0,0,.5); border-radius: 5px; overflow: hidden; }
@@ -262,6 +270,7 @@
 <canvas id="c"></canvas>
 <div id="labels"></div>
 <div id="flash"></div>
+<div id="danger"></div>
 
 <div id="hud" class="hidden">
   <div id="top">
@@ -292,6 +301,7 @@
   </div>
   <div id="help"><b>WASD</b> move · <b>Mouse</b> aim<br><b>Hold left click</b> attack · <b>Right click / E</b> special<br><b>Space</b> dodge · <b>Q</b> ultimate · <b>P</b> pause · <b>M</b> mute</div>
   <div id="spectate" class="hidden">You're out! Watching your team…</div>
+  <div id="edgeWarn" class="hidden">⚠ EDGE ⚠</div>
   <div id="skip" class="hidden">Click or press Space to skip</div>
 </div>
 <div id="announce"></div>
@@ -344,6 +354,7 @@
 <div id="credit">Characters &amp; animations: Quaternius (CC0)</div>
 <div id="topBtns">
   <button id="installBtn" class="tb" type="button" hidden>📲 Install</button>
+  <button id="dailyBtn" class="tb" type="button">🗓️ <span id="dailyCount">0/3</span></button>
   <button id="carBtn" class="tb" type="button">🏅 <span id="carLv">Lv 1</span></button>
   <button id="howBtn" class="tb" type="button">❓ How to play</button>
   <button id="setBtn" class="tb" type="button" aria-label="Settings">⚙️</button>
@@ -392,6 +403,15 @@
     </div>
     <div id="onMsg"></div>
     <div class="actions" id="onCloseRow"><button type="button" class="btn ghost" id="onClose">Close</button></div>
+  </div>
+</div>
+
+<div id="daily" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dailyTitle">
+  <div class="box">
+    <h2 id="dailyTitle">🗓️ Daily challenges</h2>
+    <div id="dailyList" class="dlist"></div>
+    <p class="onnote" id="dailyReset"></p>
+    <div class="actions"><button type="button" class="btn" id="dailyClose">Close</button></div>
   </div>
 </div>
 
@@ -1289,7 +1309,7 @@ document.getElementById('swatches').addEventListener('click', (e) => { const i =
 
 function clearMatch() {
   for (const f of fighters) { scene.remove(f.mesh.root); f.label.remove(); }
-  fighters = []; human = null; p2 = null; clearProjectiles(); storms = []; endPractice();
+  fighters = []; human = null; p2 = null; clearProjectiles(); storms = []; endPractice(); matchUlts = 0;
   document.getElementById('toasts').innerHTML = '';
   document.getElementById('p2hud').classList.add('hidden');
 }
@@ -1991,6 +2011,7 @@ function updateTopUI(raw) {
   fpsEl.classList.toggle('hidden', !settings.fps);
   updateNetInfo();
   if (!showTouch) tEmotes.classList.add('hidden');
+  if (!inMatch || paused) { dangerEl.style.opacity = 0; edgeWarnEl.classList.add('hidden'); }
   if (settings.fps) { fpsFrames++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = `${Math.round(fpsFrames / fpsT)} FPS · ${QUALITY[qIdx].name}`; fpsT = 0; fpsFrames = 0; } }
 }
 
@@ -2305,7 +2326,8 @@ function showEnd() {
       <div class="lvl"><b>Level ${L.lvl}</b><div class="xpbar"><i style="width:${(L.into / L.need) * 100}%"></i></div><small>${L.into} / ${L.need}</small></div>
       ${rec.after > rec.before ? `<div class="up">⭐ LEVEL UP! ⭐</div>` : ''}
       ${career.streak >= 2 ? `<div class="gain" style="color:#ff9a3d">🔥 ${career.streak} wins in a row</div>` : ''}
-      ${rec.fresh.map(a => `<div class="newach">🏆 Achievement unlocked: ${a.icon} ${a.name}</div>`).join('')}`;
+      ${rec.fresh.map(a => `<div class="newach">🏆 Achievement unlocked: ${a.icon} ${a.name}</div>`).join('')}
+      ${rec.dailyDone.map(c => `<div class="daily">🗓️ Daily challenge done: ${c.text} · +${DAILY_XP} XP</div>`).join('')}`;
   } else endXp.innerHTML = '';
   document.getElementById('endStats').innerHTML = `<table><thead><tr><th>Fighter</th><th>Hits</th><th>Knock-outs</th><th>Fell out</th></tr></thead><tbody>${rows}</tbody></table>`;
   document.getElementById('end').classList.remove('hidden');
@@ -2345,6 +2367,7 @@ document.querySelectorAll('.card').forEach(c => {
 });
 const abEls = { p: document.getElementById('abP'), s: document.getElementById('abS'), d: document.getElementById('abD'), u: document.getElementById('abU') };
 const tUltEl = document.getElementById('tUlt');
+const dangerEl = document.getElementById('danger'), edgeWarnEl = document.getElementById('edgeWarn');
 const p2Cds = Object.fromEntries([...document.querySelectorAll('#p2hud .p2cds i')].map(i => [i.dataset.k, i]));
 p2Cds.u.classList.add('ult');
 const p2StrainEl = document.getElementById('p2strain');
@@ -2436,6 +2459,55 @@ function checkAchievements(won) {
   for (const a of fresh) career.ach[a.id] = Date.now();
   return fresh;
 }
+// ---- daily challenges: the same 3 for everyone each day (picked from the date), +150 XP each ----
+const DAILY_XP = 150;
+let matchUlts = 0;
+function dailyKey(d = new Date()) { return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+function seededRng(seed) { return () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function todaysChallenges() {
+  let seed = 7; for (const c of dailyKey()) seed = (seed * 31 + c.charCodeAt(0)) | 0;
+  const r = seededRng(seed), pick = (n) => (r() * n) | 0;
+  const pool = [
+    () => { const el = ORDER[pick(ORDER.length)]; return { id: 'win-' + el, text: `Win a match as ${ELEMENTS[el].icon} ${ELEMENTS[el].name}`, test: m => m.won && m.el === el }; },
+    () => ({ id: 'kos3', text: 'Score 3 knock-outs in one match', test: m => m.kos >= 3 }),
+    () => ({ id: 'hard', text: 'Win a solo match on Hard', test: m => m.won && m.solo && m.diff === 'hard' }),
+    () => ({ id: 'ult2', text: 'Use 2 ultimates in one match', test: m => m.ults >= 2 }),
+    () => ({ id: 'clean', text: 'Win without falling into the water', test: m => m.won && m.outs === 0 }),
+    () => ({ id: 'hits40', text: 'Land 40 hits in one match', test: m => m.hits >= 40 }),
+    () => { const a = ['night', 'sunset', 'day'][pick(3)]; return { id: 'arena-' + a, text: `Win a match in the ${THEMES[a].name} arena`, test: m => m.won && m.theme === a }; },
+    () => ({ id: 'friends', text: 'Play a match with a friend (online or 2-player)', test: m => m.friends }),
+  ];
+  const idx = []; while (idx.length < 3) { const i = pick(pool.length); if (!idx.includes(i)) idx.push(i); }
+  return idx.map(i => pool[i]());
+}
+let daily = { key: dailyKey(), done: [] };
+try { const d = JSON.parse(localStorage.getItem('aoe-daily')); if (d && d.key === daily.key && Array.isArray(d.done)) daily = d; } catch (e) {}
+function saveDaily() { try { localStorage.setItem('aoe-daily', JSON.stringify(daily)); } catch (e) {} }
+function freshDaily() { if (daily.key !== dailyKey()) { daily = { key: dailyKey(), done: [] }; saveDaily(); } }
+function checkDaily(m) {
+  freshDaily();
+  const fresh = todaysChallenges().filter(c => !daily.done.includes(c.id) && c.test(m));
+  for (const c of fresh) daily.done.push(c.id);
+  if (fresh.length) saveDaily();
+  return fresh;
+}
+const dailyEl = document.getElementById('daily');
+function renderDaily() {
+  freshDaily();
+  const list = todaysChallenges(), n = list.filter(c => daily.done.includes(c.id)).length;
+  document.getElementById('dailyCount').textContent = `${n}/3`;
+  document.getElementById('dailyList').innerHTML = list.map(c => {
+    const done = daily.done.includes(c.id);
+    return `<div class="dch ${done ? 'done' : ''}"><span class="ck">${done ? '✅' : '⬜'}</span><div><b>${c.text}</b><small>${done ? 'Done!' : `+${DAILY_XP} XP`}</small></div></div>`;
+  }).join('');
+  const now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1), mins = Math.round((next - now) / 60000);
+  document.getElementById('dailyReset').textContent = `New challenges in ${Math.floor(mins / 60)}h ${mins % 60}m. Practice mode doesn't count.`;
+}
+document.getElementById('dailyBtn').addEventListener('click', () => { renderDaily(); openModal(dailyEl); });
+document.getElementById('dailyClose').addEventListener('click', () => closeModal(dailyEl));
+dailyEl.addEventListener('pointerdown', (e) => { if (e.target === dailyEl) closeModal(dailyEl); });
+renderDaily();
+
 function recordMatch(won) {
   if (!human || !human.human) return null; // only real player matches count
   const s = human.stats, mult = { easy: 0.75, normal: 1, hard: 1.5 }[playerMode === 'vs' || NET.mode !== 'off' ? 'normal' : difficulty];
@@ -2446,9 +2518,12 @@ function recordMatch(won) {
   career.kos += s.kos; career.hits += s.hits; career.outs += s.outs;
   career.streak = won ? career.streak + 1 : 0; career.bestStreak = Math.max(career.bestStreak, career.streak);
   career.xp += xp;
+  const dailyDone = checkDaily({ won, el: human.el, kos: s.kos, hits: s.hits, outs: s.outs, ults: matchUlts, diff: difficulty,
+    solo: playerMode === 'solo' && NET.mode === 'off', theme: currentTheme, friends: NET.mode !== 'off' || isTwoP() });
+  career.xp += dailyDone.length * DAILY_XP;
   const fresh = checkAchievements(won);
-  saveCareer(); renderCareerChip();
-  return { xp, before, after: levelInfo(career.xp).lvl, fresh };
+  saveCareer(); renderCareerChip(); renderDaily();
+  return { xp, before, after: levelInfo(career.xp).lvl, fresh, dailyDone };
 }
 const carEl = document.getElementById('career');
 function renderCareer() {
@@ -2531,6 +2606,12 @@ function updateHUD() {
     myStrainBar.style.width = `${s * 100}%`;
     myStrainBar.style.background = s < 0.35 ? '#ffd54a' : s < 0.7 ? '#ff9a3d' : '#ff3b3b';
     myStrainTxt.textContent = active(human) ? `${Math.round(s * 100)}%` : 'OUT';
+    // danger: red glow at the screen edges when you're close to your back edge or heavily strained
+    const edge = active(human) ? THREE.MathUtils.clamp((depthOf(human) - 11.5) / 3, 0, 1) : 0;
+    const strained = active(human) ? THREE.MathUtils.clamp((s - 0.45) / 0.45, 0, 1) : 0;
+    const lvl = state === 'play' ? Math.max(edge, strained * 0.75) : 0;
+    dangerEl.style.opacity = lvl ? (0.25 + 0.6 * lvl) * (0.8 + 0.2 * Math.sin(realNow * 9)) : 0;
+    edgeWarnEl.classList.toggle('hidden', edge < 0.3 || state !== 'play');
   }
   for (const f of fighters) {
     if (f.out || state === 'over') continue;
@@ -2547,6 +2628,7 @@ function updateHUD() {
 
 // ================= CAMERA =================
 const camTarget = v3(), camLook = v3(), lookNow = v3(0, 0, 0);
+const spectateEl = document.getElementById('spectate');
 const ease = (k) => k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
 function updateCamera(rdt) {
   const portrait = camera.aspect < 0.9;
@@ -2572,7 +2654,13 @@ function updateCamera(rdt) {
     else { camTarget.set(human.pos.x + s * 11.5, 9, human.pos.z * 0.55); camLook.set(human.pos.x - s * 9, 0.5, human.pos.z * 0.35); }
     if (state === 'countdown') k = 1 - Math.exp(-3 * rdt);
   } else {
-    const s = human ? human.side : -1; camTarget.set(s * 27, 17, 0); camLook.set(-s, 0, 0);
+    // you're out: follow a teammate who's still fighting (wide view if none are left)
+    const mate = human && fighters.find(f => f.team === human.team && f !== human && active(f));
+    const s = human ? human.side : -1;
+    if (mate && state !== 'over') {
+      camTarget.set(mate.pos.x + s * 12.5, 10, mate.pos.z * 0.5); camLook.set(mate.pos.x - s * 9, 0.5, mate.pos.z * 0.35);
+      if (spectateEl.dataset.who !== fighterName(mate)) { spectateEl.dataset.who = fighterName(mate); spectateEl.textContent = `You're out! Watching ${fighterName(mate)}…`; }
+    } else { camTarget.set(s * 27, 17, 0); camLook.set(-s, 0, 0); }
   }
   if (slow.t > 0 && slow.focus) { camTarget.copy(camera.position); camLook.copy(lookNow).lerp(slow.focus.pos, 0.5); fov = portrait ? 55 : 40; }
   camera.position.lerp(camTarget, k); lookNow.lerp(camLook, k);
@@ -2759,7 +2847,7 @@ function hitNote(target, owner, text, color, big, ko = false) {
 function shakeFor(f, mine, other) { shake = Math.max(shake, f === human ? mine : other); }
 function ultNote(f) {
   const E = ELEMENTS[f.el];
-  if (f === human) { announce(ULT_NAMES[f.el] + '!', E.css); say(ULT_NAMES[f.el].toLowerCase()); career.ultimates++; }
+  if (f === human) { announce(ULT_NAMES[f.el] + '!', E.css); say(ULT_NAMES[f.el].toLowerCase()); career.ultimates++; matchUlts++; }
   else toast(`${fighterName(f)}: ${ULT_NAMES[f.el]}!`, TEAM[f.team].css);
 }
 function outNote(f) { if (f === human) document.getElementById('spectate').classList.remove('hidden'); }

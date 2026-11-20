@@ -20,7 +20,7 @@ other (WebRTC via [PeerJS](https://peerjs.com)); the host's game runs the match.
 **Local 2-player:** Co-op (both on blue) or Versus (one per team) on the same PC — Player 2 uses a controller
 or the arrow keys (Enter attack · Right Shift special · Right Ctrl dodge · / ultimate).
 
-Three arenas (Night, Sunset, Day), 12 achievements, a career with XP levels and stats saved in your browser, and it can be
+🗓️ **Daily challenges** (3 new goals every day, +150 XP each), three arenas (Night, Sunset, Day), 12 achievements, a career with XP levels and stats saved in your browser, and it can be
 **installed as an app** (📲 Install button or your browser's "Add to Home screen") and played offline.
 
 ## Controls
