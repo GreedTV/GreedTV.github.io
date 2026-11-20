@@ -1,7 +1,7 @@
 {
   "name": "Arena of Elements",
   "short_name": "Elements",
-  "description": "3v3 elemental arena game. Pick Fire, Water, Earth or Air and knock the other team into the water.",
+  "description": "3v3 elemental arena game. Pick Fire, Water, Earth, Air or Lightning and knock the other team into the water.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

@@ -27,7 +27,7 @@
 <link rel="canonical" href="https://arena-of-elements.netlify.app/">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Arena of Elements</title>
-<meta name="description" content="3v3 elemental arena game in your browser. Pick Fire, Water, Earth or Air, push the other team back across the zones and knock them into the water.">
+<meta name="description" content="3v3 elemental arena game in your browser. Pick Fire, Water, Earth, Air or Lightning, push the other team back across the zones and knock them into the water.">
 <meta name="theme-color" content="#070b18">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -1334,7 +1334,8 @@ let playerMode = 'solo', p2 = null, roundLog = [];
 try { const m = localStorage.getItem('aoe-mode'); if (['solo', 'coop', 'vs', 'practice', 'ladder'].includes(m)) playerMode = m; } catch (e) {}
 function isTwoP() { return playerMode === 'coop' || playerMode === 'vs'; }
 let difficulty = 'normal';
-try { const d = localStorage.getItem('aoe-diff'); if (DIFFS[d]) difficulty = d; } catch (e) {}
+// brand-new players (no saved career yet) start on Easy so the first match isn't lost while learning the controls
+try { const d = localStorage.getItem('aoe-diff'); if (DIFFS[d]) difficulty = d; else if (!localStorage.getItem('aoe-career')) difficulty = 'easy'; } catch (e) {}
 const lookKey = (l) => l.body + l.hair + '-' + l.hairColor + '-' + l.outfit;
 let preview = null, previewEl = 'fire', looksReady = false, previewMoveT = 2;
 const menuLight = new THREE.PointLight(0xfff2e0, 40, 0, 2); menuLight.position.set(2.5, 3.2, 4); menuLight.visible = false; scene.add(menuLight);
