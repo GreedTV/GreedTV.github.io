@@ -91,6 +91,23 @@
   .btn:hover { background: #2a3b75; }
   .btn.ghost { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.22); }
   .btn.ghost:hover { border-color: var(--gold); color: var(--gold); }
+  /* online lobby */
+  .onsec { display: flex; flex-direction: column; gap: 10px; }
+  .tin { background: #070b18; color: var(--text); border: 1px solid rgba(255,255,255,.2); border-radius: 8px; padding: 9px 12px; font: 600 15px "Segoe UI", system-ui, sans-serif; width: 100%; }
+  .tin.code { text-transform: uppercase; letter-spacing: 4px; font-weight: 800; text-align: center; }
+  .onrow { display: flex; gap: 8px; } .onrow .tin { flex: 1; }
+  .onnote { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5; }
+  .oncode { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .oncode b { font-size: 26px; letter-spacing: 5px; color: var(--gold); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .onteams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tcol { background: #070b18; border-radius: 8px; padding: 8px; min-height: 96px; }
+  .tcol h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: 2px; } .tcol.blue h4 { color: var(--blue); } .tcol.red h4 { color: var(--red); }
+  .tcol .pl { font-size: 13px; padding: 3px 0; display: flex; gap: 6px; align-items: center; }
+  .tcol .pl.me { color: var(--gold); font-weight: 700; }
+  .tcol .pl.cpu { color: #5d6890; font-style: italic; }
+  #onMsg { font-size: 13px; color: #ff9a8a; min-height: 1em; }
+  .pk button.onl { border-color: rgba(125,255,154,.45); }
   .lvl { display: flex; align-items: center; gap: 10px; }
   .lvl b { color: var(--gold); font-size: 18px; white-space: nowrap; }
   .xpbar { flex: 1; height: 10px; background: rgba(0,0,0,.5); border-radius: 5px; overflow: hidden; }
@@ -259,7 +276,7 @@
   <div class="menuBottom">
     <div id="loading">Loading fighters…</div>
     <div id="picker" class="hidden">
-      <div class="pk"><span>Players</span><button data-mode="solo">Solo</button><button data-mode="coop">2P Co-op</button><button data-mode="vs">2P Versus</button></div>
+      <div class="pk"><span>Players</span><button data-mode="solo">Solo</button><button data-mode="coop">2P Co-op</button><button data-mode="vs">2P Versus</button><button id="onlineBtn" class="onl">🌐 Online</button></div>
       <div class="pk hidden" id="p2hint" style="font-size:12px;color:var(--muted)">Player 2: a controller, or <b style="color:var(--text)">arrow keys</b> + <b style="color:var(--text)">Enter</b> attack · <b style="color:var(--text)">Right Shift</b> special · <b style="color:var(--text)">Right Ctrl</b> dodge · <b style="color:var(--text)">/</b> ultimate</div>
       <div class="pk"><span>Arena</span><button data-arena="night">Night</button><button data-arena="sunset">Sunset</button><button data-arena="day">Day</button><button data-arena="random">🎲</button></div>
       <div class="pk"><span>Difficulty</span><button data-diff="easy">Easy</button><button data-diff="normal">Normal</button><button data-diff="hard">Hard</button></div>
@@ -318,6 +335,32 @@
     </ol>
     <div class="howkeys" id="howKeys"></div>
     <div class="actions"><button type="button" class="btn" id="howClose">Got it</button></div>
+  </div>
+</div>
+
+<div id="online" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="onTitle">
+  <div class="box">
+    <h2 id="onTitle">🌐 Play online</h2>
+    <div id="onStart" class="onsec">
+      <label for="onName">Your name</label>
+      <input id="onName" class="tin" maxlength="14" autocomplete="off" spellcheck="false">
+      <button type="button" class="btn" id="onHost">Host a room</button>
+      <label for="onCode">Or join a friend's room</label>
+      <div class="onrow"><input id="onCode" class="tin code" maxlength="5" placeholder="CODE" autocomplete="off" spellcheck="false"><button type="button" class="btn" id="onJoin">Join</button></div>
+      <p class="onnote">Up to 6 players, 3 per team. Empty spots are filled with computer fighters. Players connect directly; a free public matchmaking service introduces them.</p>
+    </div>
+    <div id="onLobby" class="onsec hidden">
+      <div class="oncode">Room code <b id="onCodeShow">—</b> <button type="button" class="btn ghost small" id="onCopy">Copy invite link</button></div>
+      <div class="onteams"><div class="tcol blue"><h4>BLUE</h4><div id="onBlue"></div></div><div class="tcol red"><h4>RED</h4><div id="onRed"></div></div></div>
+      <label>Your team</label>
+      <div class="types" id="onTeam"><button type="button" data-t="0">Blue</button><button type="button" data-t="1">Red</button></div>
+      <label>Your element</label>
+      <div class="types" id="onEl"><button type="button" data-e="fire">🔥 Fire</button><button type="button" data-e="water">💧 Water</button><button type="button" data-e="earth">⛰️ Earth</button><button type="button" data-e="air">🌪️ Air</button></div>
+      <p class="onnote" id="onWait">Waiting for the host to start the match…</p>
+      <div class="actions" style="gap:8px"><button type="button" class="btn ghost" id="onLeave">Leave</button><button type="button" class="btn" id="onGo">Start match</button></div>
+    </div>
+    <div id="onMsg"></div>
+    <div class="actions" id="onCloseRow"><button type="button" class="btn ghost" id="onClose">Close</button></div>
   </div>
 </div>
 
@@ -798,7 +841,7 @@ function updateDebris(dt) {
     d.vel.y -= 25 * dt; d.m.position.addScaledVector(d.vel, dt);
     const p = d.m.position, onPlat = Math.abs(p.x) < HALF_LEN && Math.abs(p.z) < HALF_W;
     if (onPlat && p.y < d.s) { p.y = d.s; d.vel.y *= -0.35; d.vel.x *= 0.6; d.vel.z *= 0.6; d.spin.multiplyScalar(0.6); }
-    if (p.y < WATER_Y) { d.life = 0; d.m.visible = false; spawnRing(v3(p.x, WATER_Y + 0.25, p.z), 0x9fdcff, 0.2, 1.2, 0.6, null, 0.6); continue; }
+    if (p.y < WATER_Y) { d.life = 0; d.m.visible = false; ringLocal(v3(p.x, WATER_Y + 0.25, p.z), 0x9fdcff, 0.2, 1.2, 0.6, null, 0.6); continue; }
     d.m.rotation.x += d.spin.x * dt; d.m.rotation.y += d.spin.y * dt; d.m.rotation.z += d.spin.z * dt;
     d.m.scale.setScalar(d.s * Math.min(1, d.life / 0.3));
   }
@@ -1129,7 +1172,7 @@ function makeFighter(team, el, slot, isHuman, look, isP2 = false) {
   };
 }
 const active = (f) => !f.out && !f.falling;
-const fighterName = (f) => f.p2 ? 'Player 2' : f.human ? (playerMode === 'solo' ? 'You' : 'Player 1') : `${TEAM[f.team].name} ${ELEMENTS[f.el].name}`;
+const fighterName = (f) => f.netName ? f.netName : f.p2 ? 'Player 2' : f.human ? (playerMode === 'solo' ? 'You' : 'Player 1') : `${TEAM[f.team].name} ${ELEMENTS[f.el].name}`;
 const depthOf = (f) => f.side * f.pos.x;
 
 // ================= GAME STATE =================
@@ -1309,7 +1352,7 @@ function spawnProjectile(f, dir, P, kind = null) {
   const mesh = makeProjMesh(f.el, P.radius, kind);
   mesh.rotation.y = Math.atan2(dir.x, dir.z); mesh.position.copy(pos);
   projectiles.push({
-    team: f.team, owner: f, el: f.el, kind, pos, vel: dir.clone().multiplyScalar(P.speed), r: P.radius,
+    id: ++netIdSeq, team: f.team, owner: f, el: f.el, kind, pos, vel: dir.clone().multiplyScalar(P.speed), r: P.radius,
     force: P.force, strain: P.strain, life: P.life || 1.4, mesh, dead: false,
     weight: ULT_KINDS.has(kind) ? 9 : kind === 'wave' ? 4 : ELEMENTS[f.el].weight,
     pierce: kind === 'wave' || ULT_KINDS.has(kind), isUlt: ULT_KINDS.has(kind), hitSet: new Set(), seen: new Set(),
@@ -1320,13 +1363,13 @@ function attack(f, dir) {
   if (f.cd.p > 0 || !active(f)) return;
   const E = ELEMENTS[f.el], P = E.primary; f.cd.p = P.cd;
   spawnProjectile(f, dir, P); fxCast(f, dir); sfx('shoot', f.el, f.human);
-  const list = E.anim.primary; playOnce(f.mesh, list[f.punchIdx++ % list.length], E.anim.pSpeed);
+  const list = E.anim.primary; animF(f,list[f.punchIdx++ % list.length], E.anim.pSpeed);
 }
 function doSpecial(f, dir) {
   const E = ELEMENTS[f.el];
   if (f.cd.s > 0 || !active(f)) return;
   f.cd.s = E.special.cd; sfx('special', f.el, f.human); fxCast(f, dir, true);
-  playOnce(f.mesh, E.anim.special, E.anim.sSpeed);
+  animF(f,E.anim.special, E.anim.sSpeed);
   switch (E.special.kind) {
     case 'spread':
       for (const a of [-0.22, 0, 0.22]) spawnProjectile(f, rotY(dir, a), { ...E.primary, force: E.primary.force * 1.15 });
@@ -1338,13 +1381,9 @@ function doSpecial(f, dir) {
       const pos = f.pos.clone().addScaledVector(dir, 2.2);
       const d = Math.max(F[f.team] + 0.5, f.side * pos.x); pos.x = f.side * d;
       pos.z = THREE.MathUtils.clamp(pos.z, -HALF_W + 1.7, HALF_W - 1.7);
-      const mesh = new THREE.Mesh(GEO.wall, MAT.earth); mesh.castShadow = true; mesh.receiveShadow = true;
-      mesh.rotation.y = Math.atan2(dir.x, dir.z); mesh.position.set(pos.x, -1.1, pos.z); scene.add(mesh);
-      walls.push({ team: f.team, pos, n: dir.clone(), mesh, hp: 5, life: 4.5, t: 0 });
-      spawnDebris(v3(pos.x, 0.2, pos.z), 10, 5, 0.15);
-      for (let i = 0; i < 16; i++) SMOKE.emit(v3(pos.x + rnd(3.4), 0.2, pos.z + rnd(1)), v3(rnd(2), 1.5, rnd(2)), COL.dust, null, 1.4, 0.9, 0, 1.5, 2, 0.6);
-      spawnRing(v3(pos.x, 0.08, pos.z), 0xc49a6c, 0.5, 3.5, 0.5, null, 0.6);
-      shake = Math.max(shake, f.human ? 0.25 : 0.1);
+      const mesh = makeWallMesh(pos, dir);
+      walls.push({ id: ++netIdSeq, team: f.team, pos, n: dir.clone(), mesh, hp: 5, life: 4.5, t: 0 });
+      fxWallRise(pos); shakeFor(f, 0.25, 0.1);
       break;
     }
     case 'gust': {
@@ -1356,8 +1395,8 @@ function doSpecial(f, dir) {
           e.strain = Math.min(160, e.strain + 6); e.stunT = 0.25; e.flashT = 0.12;
           f.stats.hits++; e.lastHitBy = f; e.lastHitT = perfNow;
           f.ult = Math.min(100, f.ult + 4); e.ult = Math.min(100, e.ult + 3);
-          if (f.human) spawnFloat('+6%', e, ELEMENTS.air.css);
-          playOnce(e.mesh, 'hitA', 1.6);
+          hitNote(e, f, '+6%', ELEMENTS.air.css, false);
+          animF(e,'hitA', 1.6);
         }
       }
       for (const p of projectiles) {
@@ -1365,11 +1404,7 @@ function doSpecial(f, dir) {
         const to = p.pos.clone().sub(f.pos); to.y = 0; const d = to.length();
         if (d < 7.5 && to.normalize().dot(dir) > Math.cos(0.65)) killProjectile(p, true);
       }
-      for (let i = 0; i < 60; i++) {
-        const v = rotY(dir, rnd(1.1)).multiplyScalar(14 + Math.random() * 12); v.y = rnd(3);
-        GLOW.emit(v3(f.pos.x, 0.6 + Math.random() * 1.6, f.pos.z), v, COL.air, COL.airFade, 0.5 + Math.random() * 0.6, 0.5, 0, 2, 1.5);
-      }
-      spawnRing(v3(f.pos.x, 1.2, f.pos.z).addScaledVector(dir, 1.5), 0xeaf8ff, 0.5, 5, 0.4, dir, 0.7);
+      fxGust(f, dir);
       break;
     }
   }
@@ -1381,52 +1416,42 @@ function ultHit(f, e, dir, force, strain) {
   e.kb.addScaledVector(dir, force * mult);
   e.strain = Math.min(160, e.strain + strain); e.stunT = 0.35; e.flashT = 0.15;
   f.stats.hits++; e.lastHitBy = f; e.lastHitT = perfNow;
-  playOnce(e.mesh, 'hitB', 1.6);
-  if (f.human) spawnFloat(`+${strain}%`, e, ELEMENTS[f.el].css, true);
+  animF(e,'hitB', 1.6);
+  hitNote(e, f, `+${strain}%`, ELEMENTS[f.el].css, true);
 }
 function useUlt(f, dir) {
   if (f.ult < 100 || !active(f)) return;
   f.ult = 0;
   const fwd = v3(-f.side, 0, 0), E = ELEMENTS[f.el];
-  if (f.human) { announce(ULT_NAMES[f.el] + '!', E.css); say(ULT_NAMES[f.el].toLowerCase()); career.ultimates++; }
-  else toast(`${fighterName(f)}: ${ULT_NAMES[f.el]}!`, TEAM[f.team].css);
+  ultNote(f);
   sfx('ult', f.el); crowdReact(1); hitStop = Math.max(hitStop, 0.12);
-  shake = Math.max(shake, f.human ? 0.6 : 0.3);
+  shakeFor(f, 0.6, 0.3);
   if (f.el === 'fire') {
     // INFERNO: a blast of fire around you that hurls nearby enemies back
-    playOnce(f.mesh, 'cast', 0.9);
+    animF(f,'cast', 0.9);
     for (const e of fighters) {
       if (e.team === f.team || !active(e) || e.dodgeT > 0) continue;
       const to = e.pos.clone().sub(f.pos); to.y = 0; const d = to.length();
       if (d < 10) ultHit(f, e, fwd.clone().multiplyScalar(0.75).addScaledVector(to.normalize(), 0.25).normalize(), 16 * (1 - d / 16), 15);
     }
-    for (let i = 0; i < 140; i++) {
-      const a = Math.random() * Math.PI * 2, s = 10 + Math.random() * 10;
-      GLOW.emit(v3(f.pos.x, 0.5 + Math.random() * 1.5, f.pos.z), v3(Math.cos(a) * s, 1 + Math.random() * 3, Math.sin(a) * s), COL.fireHot, COL.fireEnd, 0.9, 0.6, -2, 1, 2.5);
-    }
-    for (let i = 0; i < 3; i++) spawnRing(v3(f.pos.x, 0.15 + i * 0.4, f.pos.z), 0xff6a1a, 0.5, 10 - i * 2, 0.6 + i * 0.1, null, 0.9, 2);
-    flash(0.25);
+    fxInferno(f);
   } else if (f.el === 'water') {
     // TSUNAMI: an arena-wide wave rolling toward the enemy side
-    playOnce(f.mesh, 'punchB', 1.0);
+    animF(f,'punchB', 1.0);
     const p = spawnProjectile(f, fwd, { speed: 13, radius: 1.3, force: 15, strain: 14, life: 2.4 }, 'tsunami');
     p.pos.z = 0; p.pos.y = 1.0; p.mesh.position.copy(p.pos);
   } else if (f.el === 'earth') {
     // EARTHQUAKE: a shockwave through the ground that hits every enemy in front of you
-    playOnce(f.mesh, 'stomp', 1.2);
+    animF(f,'stomp', 1.2);
     for (const e of fighters) {
       if (e.team === f.team || !active(e) || e.dodgeT > 0) continue;
       ultHit(f, e, fwd, 14, 15);
       spawnDebris(v3(e.pos.x, 0.2, e.pos.z), 8, 7, 0.22);
     }
-    for (let x = f.pos.x; Math.abs(x - f.pos.x) < 30 && Math.abs(x) < HALF_LEN; x += fwd.x * 1.5) {
-      spawnDebris(v3(x, 0.1, rnd(14)), 2, 6, 0.18);
-      SMOKE.emit(v3(x, 0.2, rnd(14)), v3(rnd(1), 2, rnd(1)), COL.dust, null, 2, 1, 0, 1.5, 1, 0.6);
-    }
-    spawnRing(v3(f.pos.x, 0.1, f.pos.z), 0xc49a6c, 0.5, 14, 0.8, null, 0.8, 1.5);
+    fxQuake(f, fwd.x);
   } else {
     // TORNADO: a slow twister that plows through everyone in its path
-    playOnce(f.mesh, 'cast', 0.9);
+    animF(f,'cast', 0.9);
     const p = spawnProjectile(f, dir, { speed: 8, radius: 2.0, force: 13, strain: 14, life: 2.8 }, 'tornado');
     p.pos.y = 1.4; p.mesh.position.copy(p.pos);
   }
@@ -1434,9 +1459,9 @@ function useUlt(f, dir) {
 function dodge(f, dir) {
   if (f.cd.d > 0 || !active(f)) return;
   f.dodgeT = ELEMENTS[f.el].dodgeTime || 0.18; f.dodgeDir.copy(dir).setY(0).normalize(); f.cd.d = 1.1;
-  playOnce(f.mesh, 'roll', 3.0);
+  animF(f,'roll', 3.0);
   sfx('dodge', f.el, f.human);
-  for (let i = 0; i < 12; i++) (f.el === 'earth' ? SMOKE : GLOW).emit(v3(f.pos.x, 0.3 + Math.random() * 1.5, f.pos.z), rv(1.5).addScaledVector(f.dodgeDir, -3), f.el === 'earth' ? COL.dust : { fire: COL.fireMid, water: COL.water, air: COL.air }[f.el], null, 0.5, 0.4, 0, 1, 2, 0.6);
+  fxDodge(f, f.dodgeDir);
 }
 function killProjectile(p, fx = true) {
   if (p.dead) return; p.dead = true; scene.remove(p.mesh);
@@ -1446,17 +1471,16 @@ function hitFighter(f, p) {
   p.owner.stats.hits++; f.lastHitBy = p.owner; f.lastHitT = perfNow;
   if (!p.isUlt) p.owner.ult = Math.min(100, p.owner.ult + (p.kind ? 5 : 7));
   f.ult = Math.min(100, f.ult + 3); // getting hit charges a little too (comeback)
-  if (p.owner.human) spawnFloat(`+${p.strain}%`, f, ELEMENTS[p.el].css, p.isUlt);
+  hitNote(f, p.owner, `+${p.strain}%`, ELEMENTS[p.el].css, p.isUlt);
   const dir = p.vel.clone().setY(0).normalize();
   const mult = 1 + f.strain / 55, power = p.force * mult;
   f.kb.addScaledVector(dir, power);
   f.strain = Math.min(160, f.strain + p.strain);
   f.stunT = 0.22; f.flashT = 0.12;
-  playOnce(f.mesh, Math.random() < 0.5 ? 'hitA' : 'hitB', 1.8);
+  animF(f,Math.random() < 0.5 ? 'hitA' : 'hitB', 1.8);
   fxHit(v3(f.pos.x, 1.3, f.pos.z), p.el, power, dir);
   sfx('hit', p.el, f.human || p.owner.human);
   if (power > 13) { hitStop = Math.max(hitStop, 0.07); crowdReact(0.5); } else crowdReact(0.25);
-  if (f.human) shake = Math.max(shake, 0.35); else if (p.owner.human) shake = Math.max(shake, 0.12);
 }
 function wallHit(w, pos, r) {
   const d = pos.clone().sub(w.pos);
@@ -1501,7 +1525,7 @@ function updateProjectiles(dt) {
       if (a.pos.distanceToSquared(b.pos) < (a.r + b.r) ** 2) {
         const diff = a.weight - b.weight;
         if (diff <= -2) killProjectile(a); else if (diff >= 2) killProjectile(b); else { killProjectile(a); killProjectile(b); }
-        GLOW.emit(a.pos, v3(), COL.white, null, 2.2, 0.15, 0, 0.5);
+        fxClash(a.pos);
         sfx('clash', a.el, a.owner.human || b.owner.human);
         if (a.dead) break;
       }
@@ -1515,8 +1539,7 @@ function updateWalls(dt) {
     w.mesh.position.y = THREE.MathUtils.lerp(-1.1, 1.1, 1 - Math.pow(1 - Math.min(1, w.t / 0.22), 3));
     if (w.life <= 0 || w.hp <= 0) {
       w.dead = true; scene.remove(w.mesh);
-      spawnDebris(v3(w.pos.x, 1, w.pos.z), 14, 6, 0.22);
-      for (let i = 0; i < 14; i++) SMOKE.emit(v3(w.pos.x + rnd(3), 0.8 + Math.random(), w.pos.z + rnd(1)), rv(2), COL.dust, null, 1.5, 0.9, 0, 1.5, 2, 0.6);
+      fxWallBreak(w.pos);
     }
   }
   walls = walls.filter(w => !w.dead);
@@ -1649,7 +1672,7 @@ document.getElementById('tDdg').addEventListener('pointerdown', (e) => { initAud
 document.getElementById('tUlt').addEventListener('pointerdown', (e) => { initAudio(); ultQ = true; e.preventDefault(); });
 document.getElementById('tPause').addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  if (['play', 'countdown', 'intro', 'roundEnd'].includes(state)) setPaused(!paused);
+  if (['play', 'countdown', 'intro', 'roundEnd'].includes(state)) togglePause();
 });
 const nearestEnemy = (f) => { let best = null, bd = Infinity; for (const e of fighters) { if (e.team === f.team || !active(e)) continue; const d = e.pos.distanceToSquared(f.pos); if (d < bd) { bd = d; best = e; } } return best; };
 
@@ -1681,7 +1704,7 @@ function pollP2() {
     if (press(1) || press(5)) p2in.spcQ = true;
     if (press(2) || press(4)) p2in.ddgQ = true;
     if (press(3)) p2in.ultQ = true;
-    if (press(9) && ['play', 'countdown', 'intro', 'roundEnd'].includes(state)) setPaused(!paused);
+    if (press(9) && ['play', 'countdown', 'intro', 'roundEnd'].includes(state)) togglePause();
     p2Prev = gp.buttons.map(b => b.pressed);
   }
   p2in.mx = mx; p2in.my = my; p2in.atk = atk;
@@ -1719,7 +1742,7 @@ function pollPad() {
     if (press(0)) startMatch(chosenEl);
     if (press(1)) document.getElementById('change').click();
   } else {
-    if (press(9) && ['play', 'countdown', 'intro', 'roundEnd'].includes(state)) setPaused(!paused);
+    if (press(9) && ['play', 'countdown', 'intro', 'roundEnd'].includes(state)) togglePause();
     else if (paused && press(0)) setPaused(false);
     else if (paused && press(1)) quitToMenu();
     if (!paused) {
@@ -1775,7 +1798,7 @@ addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyM') toggleMute();
   if (e.code === 'KeyG') { qIdx = (qIdx + 1) % QUALITY.length; applyQuality(true); }
-  if ((e.code === 'KeyP' || e.code === 'Escape') && !['menu', 'over', 'loading'].includes(state) && !anyModal()) setPaused(!paused);
+  if ((e.code === 'KeyP' || e.code === 'Escape') && !['menu', 'over', 'loading'].includes(state) && !anyModal()) togglePause();
 });
 addEventListener('keyup', (e) => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; });
@@ -1788,33 +1811,47 @@ addEventListener('pointerdown', (e) => {
 addEventListener('pointerup', (e) => { if (e.button === 0) mouseDown = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
 
-function controlHuman(f) {
-  const fwd = -f.side, side2p = playerMode !== 'solo'; // 2-player modes use a side camera: screen-relative controls
+// Read this player's controls into an "intent" (move direction, aim direction, buttons).
+// The host applies intents directly; online friends send theirs to the host.
+function readIntent(f) {
+  const it = { want: v3(), dir: v3(-f.side, 0, 0), atk: false, spc: specialQ, ddg: dodgeQ, ult: ultQ };
+  specialQ = dodgeQ = ultQ = false;
+  if (netMenuOpen) { it.spc = it.ddg = it.ult = false; return it; }
+  const fwd = -f.side, rz = -f.side; // screen-right is +Z behind the blue side, -Z behind the red side
+  const side2p = playerMode !== 'solo' && NET.mode === 'off'; // local 2-player side camera: screen-relative controls
   if (touchMode || padMode) {
-    if (padMode) { if (side2p) f.want.set(pad.mx, 0, pad.my); else f.want.set(fwd * -pad.my, 0, pad.mx); }
-    else f.want.set(fwd * touch.y, 0, touch.x);
-    if (f.want.lengthSq() > 1) f.want.normalize();
-    const t = nearestEnemy(f), dir = v3(-f.side, 0, 0);
-    if (padMode && Math.hypot(pad.ax, pad.ay) > 0.4) { if (side2p) dir.set(pad.ax, 0, pad.ay).normalize(); else dir.set(fwd * -pad.ay, 0, pad.ax).normalize(); } // right stick aims
-    else if (t) { const d = t.pos.clone().addScaledVector(t.mv, t.pos.distanceTo(f.pos) / ELEMENTS[f.el].primary.speed * 0.6).sub(f.pos); d.y = 0; if (d.lengthSq() > 0.01) dir.copy(d.normalize()); }
-    f.facing.copy(dir);
-    if (touch.atk || pad.atk) attack(f, dir);
-    if (specialQ) doSpecial(f, dir);
-    if (dodgeQ) dodge(f, f.want.lengthSq() > 0.01 ? f.want : v3(0, 0, f.pos.z > 0 ? -1 : 1));
-    if (ultQ) useUlt(f, dir); specialQ = dodgeQ = ultQ = false;
-    return;
+    if (padMode) { if (side2p) it.want.set(pad.mx, 0, pad.my); else it.want.set(fwd * -pad.my, 0, rz * pad.mx); }
+    else it.want.set(fwd * touch.y, 0, rz * touch.x);
+    const t = nearestEnemy(f);
+    if (padMode && Math.hypot(pad.ax, pad.ay) > 0.4) { if (side2p) it.dir.set(pad.ax, 0, pad.ay).normalize(); else it.dir.set(fwd * -pad.ay, 0, rz * pad.ax).normalize(); } // right stick aims
+    else if (t) { const d = t.pos.clone().addScaledVector(t.mv, t.pos.distanceTo(f.pos) / ELEMENTS[f.el].primary.speed * 0.6).sub(f.pos); d.y = 0; if (d.lengthSq() > 0.01) it.dir.copy(d.normalize()); }
+    it.atk = touch.atk || pad.atk;
+  } else {
+    const ws = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), ad = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+    if (side2p) it.want.set(ad, 0, -ws); else it.want.set(fwd * ws, 0, rz * ad);
+    ray.setFromCamera(mouse, camera);
+    if (ray.ray.intersectPlane(aimPlane, aimPt)) { const d = aimPt.clone().sub(f.pos); d.y = 0; if (d.lengthSq() > 0.25) it.dir.copy(d.normalize()); }
+    it.atk = mouseDown;
   }
-  const ws = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), ad = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
-  if (side2p) f.want.set(ad, 0, -ws); else f.want.set(fwd * ws, 0, ad);
-  if (f.want.lengthSq() > 1) f.want.normalize();
-  ray.setFromCamera(mouse, camera);
-  const dir = v3(-f.side, 0, 0);
-  if (ray.ray.intersectPlane(aimPlane, aimPt)) { const d = aimPt.clone().sub(f.pos); d.y = 0; if (d.lengthSq() > 0.25) dir.copy(d.normalize()); }
-  f.facing.copy(dir);
-  if (mouseDown) attack(f, dir);
-  if (specialQ) doSpecial(f, dir);
-  if (dodgeQ) dodge(f, f.want.lengthSq() > 0.01 ? f.want : v3(0, 0, f.pos.z > 0 ? -1 : 1));
-  if (ultQ) useUlt(f, dir); specialQ = dodgeQ = ultQ = false;
+  if (it.want.lengthSq() > 1) it.want.normalize();
+  return it;
+}
+function applyIntent(f, it) {
+  f.want.copy(it.want); f.facing.copy(it.dir);
+  if (it.atk) attack(f, it.dir);
+  if (it.spc) doSpecial(f, it.dir);
+  if (it.ddg) dodge(f, it.want.lengthSq() > 0.01 ? it.want : v3(0, 0, f.pos.z > 0 ? -1 : 1));
+  if (it.ult) useUlt(f, it.dir);
+}
+function controlHuman(f) { applyIntent(f, readIntent(f)); }
+// an online friend's fighter, driven by the controls they send to the host
+function controlRemote(f) {
+  const r = NET.intents.get(f.owner);
+  if (!r) { f.want.set(0, 0, 0); return; }
+  const dir = v3(r.ax, 0, r.az); if (dir.lengthSq() < 0.01) dir.set(-f.side, 0, 0); dir.normalize();
+  const want = v3(r.mx, 0, r.mz); if (want.lengthSq() > 1) want.normalize();
+  applyIntent(f, { want, dir, atk: r.atk, spc: r.spc, ddg: r.ddg, ult: r.ult });
+  r.spc = r.ddg = r.ult = false;
 }
 
 const PREF_DEPTH = { earth: 1.2, water: 2.2, fire: 2.6, air: 3.2 };
@@ -1896,16 +1933,16 @@ function updateFighter(f, dt) {
   const m = f.mesh;
   if (f.falling) {
     f.vy -= 24 * dt; f.pos.addScaledVector(f.kb, dt); f.pos.y += f.vy * dt; f.kb.multiplyScalar(Math.exp(-0.8 * dt));
-    m.root.position.copy(f.pos); m.root.rotation.x -= dt * 1.5;
-    m.oneShot = null; m.base = 'fall'; m.baseSpeed = 1; updateAnim(m, dt);
+    fighterVisual(f, dt);
     if (f.pos.y < WATER_Y + 0.2) {
-      f.out = true; m.root.visible = false; f.label.style.display = 'none';
+      f.out = true; fighterOutVisual(f);
       fxSplash(f.pos.x, f.pos.z); sfx('splash');
       f.stats.outs++;
       const by = f.lastHitBy && perfNow - f.lastHitT < 5 ? f.lastHitBy : null;
-      if (by) { by.stats.kos++; if (by.human) spawnFloat('KO!', f, '#ffd54a', true); }
-      toast(`${fighterName(f)} ${f.human ? 'are' : 'is'} OUT!${by ? ` (knocked out by ${by.human ? 'you' : fighterName(by)})` : ''}`, TEAM[f.team].css);
-      if (f.human) document.getElementById('spectate').classList.remove('hidden');
+      if (by) { by.stats.kos++; hitNote(f, by, 'KO!', '#ffd54a', true, true); }
+      const solo = NET.mode === 'off';
+      toast(`${fighterName(f)} ${solo && f.human ? 'are' : 'is'} OUT!${by ? ` (knocked out by ${solo && by.human ? 'you' : fighterName(by)})` : ''}`, TEAM[f.team].css);
+      outNote(f);
     }
     return;
   }
@@ -1928,17 +1965,26 @@ function updateFighter(f, dt) {
   if (crossed > f.line && f.side * f.kb.x > 1.5) {
     f.line = crossed;
     if (crossed > F[f.team]) { spawnRing(v3(f.pos.x, 0.1, f.pos.z), 0xffd54a, 0.4, 2.2, 0.5, null, 0.8); }
-    if (f.human && crossed > F[f.team]) toast(`You were pushed back to zone ${crossed / ZONE + 1}!`, '#ffd54a');
+    if (crossed > F[f.team]) pushNote(f, crossed / ZONE + 1);
   }
   if (d > HALF_LEN) {
     f.falling = true; f.vy = 3; f.kb.x = f.side * Math.max(3, f.side * f.kb.x); f.kb.z *= 0.5;
     const left = fighters.filter(o => o.team === f.team && active(o)).length;
-    const final = left === 0;
-    slow = { t: final ? 1.5 : 0.9, scale: final ? 0.22 : 0.32, focus: f };
-    crowdReact(final ? 1 : 0.8);
-    if (final) { flash(0.45); say('Knockout!'); }
+    startSlow(f, left === 0);
   }
-  // ---- visuals ----
+  fighterVisual(f, dt);
+}
+// ---- how a fighter looks this frame (runs on every player's screen; online friends get the state from the host) ----
+function fighterOutVisual(f) { f.mesh.root.visible = false; f.label.style.display = 'none'; }
+function fighterVisual(f, dt) {
+  const m = f.mesh;
+  if (f.out) return;
+  if (f.falling) {
+    m.root.position.copy(f.pos); m.root.rotation.x -= dt * 1.5;
+    m.oneShot = null; m.base = 'fall'; m.baseSpeed = 1; updateAnim(m, dt);
+    return;
+  }
+  m.root.rotation.x = 0;
   m.root.position.set(f.pos.x, 0, f.pos.z);
   // which way the body points: aim when attacking/standing, run direction when moving sideways, roll direction when dodging
   const sp = Math.hypot(f.mv.x, f.mv.z);
@@ -2011,11 +2057,16 @@ function showEnd() {
   state = 'over';
   document.getElementById('announce').classList.remove('show');
   document.getElementById('toasts').innerHTML = '';
-  const won = wins[0] > wins[1];
-  roundWinner = won ? 0 : 1;
+  const myTeam = human ? human.team : 0, online = NET.mode !== 'off';
+  const won = wins[myTeam] > wins[1 - myTeam];
+  roundWinner = wins[0] > wins[1] ? 0 : 1;
+  if (NET.mode === 'host') netSendAll({ k: 'end', stats: fighters.map(f => [f.stats.hits, f.stats.kos, f.stats.outs]), w: wins, rl: roundLog });
+  document.getElementById('again').textContent = online ? 'Back to lobby' : 'Play again';
+  document.getElementById('again').classList.toggle('hidden', NET.mode === 'client');
+  document.getElementById('change').textContent = online ? 'Leave room' : 'Change element';
   for (const f of fighters) { if (!f.out) continue; f.out = false; f.falling = false; f.pos.set(f.side * 3, 0, (f.slot - 1) * 4.5); f.mesh.root.visible = true; f.mesh.root.rotation.set(0, 0, 0); }
-  document.getElementById('endTitle').textContent = playerMode === 'vs' ? (won ? 'PLAYER 1 WINS' : 'PLAYER 2 WINS') : won ? 'VICTORY' : 'DEFEAT';
-  document.getElementById('endSub').textContent = `Blue ${wins[0]} – ${wins[1]} Red · ${DIFFS[difficulty].name}`;
+  document.getElementById('endTitle').textContent = playerMode === 'vs' && !online ? (won ? 'PLAYER 1 WINS' : 'PLAYER 2 WINS') : won ? 'VICTORY' : 'DEFEAT';
+  document.getElementById('endSub').textContent = `Blue ${wins[0]} – ${wins[1]} Red · ${online ? '🌐 Online' : DIFFS[difficulty].name}`;
   // match stats + MVP (knock-outs count most, then hits; falling out costs a little)
   const score = (f) => f.stats.kos * 3 + f.stats.hits * 0.2 - f.stats.outs;
   const mvp = fighters.reduce((a, b) => score(b) > score(a) ? b : a);
@@ -2039,8 +2090,8 @@ function showEnd() {
   say(won ? 'Victory! Blue team wins the match!' : 'Red team wins the match!');
   mouseDown = false;
 }
-document.getElementById('again').onclick = () => startMatch(chosenEl);
-document.getElementById('change').onclick = () => { document.getElementById('end').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); clearMatch(); state = 'menu'; previewEl = chosenEl; rebuildPreview(); };
+document.getElementById('again').onclick = () => { if (NET.mode === 'host') netBackToLobby(); else startMatch(chosenEl); };
+document.getElementById('change').onclick = () => { if (NET.mode !== 'off') { netLeave(); return; } document.getElementById('end').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); clearMatch(); state = 'menu'; previewEl = chosenEl; rebuildPreview(); };
 
 // ================= HUD =================
 const terrEl = document.getElementById('terr');
@@ -2120,9 +2171,9 @@ function checkAchievements(won) {
   const s = human.stats, lvl = levelInfo(career.xp).lvl;
   const test = {
     first: won, hat: s.kos >= 3, untouch: won && s.outs === 0, comeback: won && roundLog[0] === 1,
-    hard: won && difficulty === 'hard' && playerMode === 'solo', all4: ORDER.every(e => (career.elemWins || {})[e] > 0),
+    hard: won && difficulty === 'hard' && playerMode === 'solo' && NET.mode === 'off', all4: ORDER.every(e => (career.elemWins || {})[e] > 0),
     ult10: career.ultimates >= 10, streak3: career.streak >= 3, hits1000: career.hits >= 1000,
-    lvl5: lvl >= 5, lvl10: lvl >= 10, coop: won && playerMode === 'coop',
+    lvl5: lvl >= 5, lvl10: lvl >= 10, coop: won && (playerMode === 'coop' && NET.mode === 'off' || NET.mode !== 'off' && fighters.some(f => f !== human && f.owner && f.team === human.team)),
   };
   const fresh = ACH.filter(a => test[a.id] && !career.ach[a.id]);
   for (const a of fresh) career.ach[a.id] = Date.now();
@@ -2130,7 +2181,7 @@ function checkAchievements(won) {
 }
 function recordMatch(won) {
   if (!human || !human.human) return null; // only real player matches count
-  const s = human.stats, mult = { easy: 0.75, normal: 1, hard: 1.5 }[playerMode === 'vs' ? 'normal' : difficulty];
+  const s = human.stats, mult = { easy: 0.75, normal: 1, hard: 1.5 }[playerMode === 'vs' || NET.mode !== 'off' ? 'normal' : difficulty];
   if (won) { career.elemWins = career.elemWins || {}; career.elemWins[human.el] = (career.elemWins[human.el] || 0) + 1; }
   const xp = Math.round((50 + (won ? 100 : 0) + s.kos * 25 + s.hits * 2) * mult);
   const before = levelInfo(career.xp).lvl;
@@ -2179,9 +2230,14 @@ addEventListener('appinstalled', () => { installBtn.hidden = true; toast('Instal
 
 // ---- pause menu ----
 function setPaused(v) {
-  paused = v; document.getElementById('pause').classList.toggle('hidden', !v);
   mouseDown = false; for (const k in keys) keys[k] = false; touch.atk = false;
+  const online = NET.mode !== 'off' && NET.inMatch;
+  document.getElementById('pRestart').classList.toggle('hidden', online);
+  document.getElementById('pQuit').textContent = online ? '⌂ Leave room' : '⌂ Quit to menu';
+  if (online) { netMenuOpen = v; document.getElementById('pause').classList.toggle('hidden', !v); return; } // online: the match keeps running
+  paused = v; document.getElementById('pause').classList.toggle('hidden', !v);
 }
+function togglePause() { setPaused(NET.mode !== 'off' && NET.inMatch ? !netMenuOpen : !paused); }
 function quitToMenu() {
   setPaused(false); clearMatch(); state = 'menu';
   for (const id of ['hud', 'end', 'spectate']) document.getElementById(id).classList.add('hidden');
@@ -2191,7 +2247,7 @@ function quitToMenu() {
 document.getElementById('pResume').addEventListener('click', () => setPaused(false));
 document.getElementById('pRestart').addEventListener('click', () => { setPaused(false); startMatch(chosenEl); });
 document.getElementById('pSettings').addEventListener('click', () => { renderSettings(); openModal(setEl); });
-document.getElementById('pQuit').addEventListener('click', quitToMenu);
+document.getElementById('pQuit').addEventListener('click', () => { if (NET.mode !== 'off') netLeave(); else quitToMenu(); });
 const projV = v3();
 function updateHUD() {
   timerEl.textContent = Math.ceil(Math.max(0, timer));
@@ -2254,11 +2310,12 @@ function updateCamera(rdt) {
     if (portrait) { camTarget.set(cx, 26, 30); camLook.set(cx, 0, -1); } else { camTarget.set(cx, 18, 24); camLook.set(cx, 0, -1.5); }
     if (state === 'countdown') k = 1 - Math.exp(-3 * rdt);
   } else if (human && active(human)) {
-    if (portrait) { camTarget.set(human.pos.x - 13, 12, human.pos.z * 0.3); camLook.set(human.pos.x + 8, 0, human.pos.z * 0.2); }
-    else { camTarget.set(human.pos.x - 11.5, 9, human.pos.z * 0.55); camLook.set(human.pos.x + 9, 0.5, human.pos.z * 0.35); }
+    const s = human.side; // camera sits behind your own team's side (blue: -X, red: +X)
+    if (portrait) { camTarget.set(human.pos.x + s * 13, 12, human.pos.z * 0.3); camLook.set(human.pos.x - s * 8, 0, human.pos.z * 0.2); }
+    else { camTarget.set(human.pos.x + s * 11.5, 9, human.pos.z * 0.55); camLook.set(human.pos.x - s * 9, 0.5, human.pos.z * 0.35); }
     if (state === 'countdown') k = 1 - Math.exp(-3 * rdt);
   } else {
-    camTarget.set(-27, 17, 0); camLook.set(1, 0, 0);
+    const s = human ? human.side : -1; camTarget.set(s * 27, 17, 0); camLook.set(-s, 0, 0);
   }
   if (slow.t > 0 && slow.focus) { camTarget.copy(camera.position); camLook.copy(lookNow).lerp(slow.focus.pos, 0.5); fov = portrait ? 55 : 40; }
   camera.position.lerp(camTarget, k); lookNow.lerp(camLook, k);
@@ -2301,7 +2358,9 @@ function tick(dt, rdt) {
   perfNow += dt; realNow += rdt;
   updateWater(perfNow);
   crowdLevel = Math.max(0.08, crowdLevel - rdt * 0.3); crowdU.uTime.value = realNow; crowdU.uCheer.value = crowdLevel; updateCrowdAudio();
-  if (state === 'intro') {
+  if (NET.mode === 'client' && NET.inMatch && state !== 'over') {
+    clientUpdate(dt, rdt); // online friend: mirror the host's game, send our controls
+  } else if (state === 'intro') {
     stateT -= rdt; idleAll(dt);
     if (stateT <= 0 || skipIntro) { state = 'countdown'; stateT = COUNT_TIME; lastCount = 4; document.getElementById('skip').classList.add('hidden'); }
   } else if (state === 'countdown') {
@@ -2313,7 +2372,7 @@ function tick(dt, rdt) {
   } else if (state === 'play') {
     timer -= dt;
     let t0 = performance.now();
-    for (const f of fighters) if (active(f)) (f.human ? controlHuman(f) : f.p2 ? controlP2(f) : controlAI(f, dt));
+    for (const f of fighters) if (active(f)) (f.human ? controlHuman(f) : f.p2 ? controlP2(f) : f.remote ? controlRemote(f) : controlAI(f, dt));
     pm('ai', t0); t0 = performance.now();
     for (const f of fighters) updateFighter(f, dt);
     pm('fighters+anim', t0); t0 = performance.now();
@@ -2345,7 +2404,462 @@ function tick(dt, rdt) {
   pm('camera+jumbo', t1); t1 = performance.now();
   if (!['menu', 'loading', 'over'].includes(state)) updateHUD();
   pm('hud', t1);
+  if (NET.mode === 'host' && NET.inMatch) netHostSend(rdt);
 }
+// ================= ONLINE PLAY (peer-to-peer rooms over WebRTC, using PeerJS) =================
+// The host's game runs the real match. Friends send their controls to the host and get back the game
+// state ~20 times a second, plus every effect / sound / animation as it happens ("visual calls").
+const NET = { mode: 'off', peer: null, conns: new Map(), hostConn: null, code: '', myId: 'host', lobby: [], intents: new Map(),
+  inMatch: false, sendT: 0, inT: 0, fxq: [], edge: { spc: false, ddg: false, ult: false }, joinTimer: 0 };
+let netIdSeq = 0, netMenuOpen = false;
+const netProj = new Map(), netWalls = new Map();
+const r2 = (v) => Math.round(v * 100) / 100;
+const c1 = (v) => Math.max(-1, Math.min(1, +v || 0));
+
+// ---- visual-only helpers (everyone runs these; the host also sends them to friends) ----
+function animF(f, name, speed) { playOnce(f.mesh, name, speed); }
+function makeWallMesh(pos, dir) {
+  const mesh = new THREE.Mesh(GEO.wall, MAT.earth); mesh.castShadow = true; mesh.receiveShadow = true;
+  mesh.rotation.y = Math.atan2(dir.x, dir.z); mesh.position.set(pos.x, -1.1, pos.z); scene.add(mesh); return mesh;
+}
+function fxWallRise(pos) {
+  spawnDebris(v3(pos.x, 0.2, pos.z), 10, 5, 0.15);
+  for (let i = 0; i < 16; i++) SMOKE.emit(v3(pos.x + rnd(3.4), 0.2, pos.z + rnd(1)), v3(rnd(2), 1.5, rnd(2)), COL.dust, null, 1.4, 0.9, 0, 1.5, 2, 0.6);
+  spawnRing(v3(pos.x, 0.08, pos.z), 0xc49a6c, 0.5, 3.5, 0.5, null, 0.6);
+}
+function fxWallBreak(pos) {
+  spawnDebris(v3(pos.x, 1, pos.z), 14, 6, 0.22);
+  for (let i = 0; i < 14; i++) SMOKE.emit(v3(pos.x + rnd(3), 0.8 + Math.random(), pos.z + rnd(1)), rv(2), COL.dust, null, 1.5, 0.9, 0, 1.5, 2, 0.6);
+}
+function fxGust(f, dir) {
+  for (let i = 0; i < 60; i++) {
+    const v = rotY(dir, rnd(1.1)).multiplyScalar(14 + Math.random() * 12); v.y = rnd(3);
+    GLOW.emit(v3(f.pos.x, 0.6 + Math.random() * 1.6, f.pos.z), v, COL.air, COL.airFade, 0.5 + Math.random() * 0.6, 0.5, 0, 2, 1.5);
+  }
+  spawnRing(v3(f.pos.x, 1.2, f.pos.z).addScaledVector(dir, 1.5), 0xeaf8ff, 0.5, 5, 0.4, dir, 0.7);
+}
+function fxInferno(f) {
+  for (let i = 0; i < 140; i++) {
+    const a = Math.random() * Math.PI * 2, s = 10 + Math.random() * 10;
+    GLOW.emit(v3(f.pos.x, 0.5 + Math.random() * 1.5, f.pos.z), v3(Math.cos(a) * s, 1 + Math.random() * 3, Math.sin(a) * s), COL.fireHot, COL.fireEnd, 0.9, 0.6, -2, 1, 2.5);
+  }
+  for (let i = 0; i < 3; i++) spawnRing(v3(f.pos.x, 0.15 + i * 0.4, f.pos.z), 0xff6a1a, 0.5, 10 - i * 2, 0.6 + i * 0.1, null, 0.9, 2);
+  flash(0.25);
+}
+function fxQuake(f, fx) {
+  for (let x = f.pos.x; Math.abs(x - f.pos.x) < 30 && Math.abs(x) < HALF_LEN; x += fx * 1.5) {
+    spawnDebris(v3(x, 0.1, rnd(14)), 2, 6, 0.18);
+    SMOKE.emit(v3(x, 0.2, rnd(14)), v3(rnd(1), 2, rnd(1)), COL.dust, null, 2, 1, 0, 1.5, 1, 0.6);
+  }
+  spawnRing(v3(f.pos.x, 0.1, f.pos.z), 0xc49a6c, 0.5, 14, 0.8, null, 0.8, 1.5);
+}
+function fxDodge(f, dir) {
+  for (let i = 0; i < 12; i++) (f.el === 'earth' ? SMOKE : GLOW).emit(v3(f.pos.x, 0.3 + Math.random() * 1.5, f.pos.z), rv(1.5).addScaledVector(dir, -3), f.el === 'earth' ? COL.dust : { fire: COL.fireMid, water: COL.water, air: COL.air }[f.el], null, 0.5, 0.4, 0, 1, 2, 0.6);
+}
+function fxClash(pos) { GLOW.emit(pos, v3(), COL.white, null, 2.2, 0.15, 0, 0.5); }
+// personal touches: floating numbers / screen shake only for the players involved
+function hitNote(target, owner, text, color, big, ko = false) {
+  if (owner === human) spawnFloat(text, target, color, big);
+  if (ko) return;
+  if (target === human) shake = Math.max(shake, 0.35); else if (owner === human) shake = Math.max(shake, 0.12);
+}
+function shakeFor(f, mine, other) { shake = Math.max(shake, f === human ? mine : other); }
+function ultNote(f) {
+  const E = ELEMENTS[f.el];
+  if (f === human) { announce(ULT_NAMES[f.el] + '!', E.css); say(ULT_NAMES[f.el].toLowerCase()); career.ultimates++; }
+  else toast(`${fighterName(f)}: ${ULT_NAMES[f.el]}!`, TEAM[f.team].css);
+}
+function outNote(f) { if (f === human) document.getElementById('spectate').classList.remove('hidden'); }
+function pushNote(f, zone) { if (f === human) toast(`You were pushed back to zone ${zone}!`, '#ffd54a'); }
+function startSlow(f, final) {
+  slow = { t: final ? 1.5 : 0.9, scale: final ? 0.22 : 0.32, focus: f };
+  crowdReact(final ? 1 : 0.8);
+  if (final) { flash(0.45); say('Knockout!'); }
+}
+function ringLocal(...a) { return (rpcFns.spawnRing || spawnRing)(...a); }
+
+// ---- "visual calls": the host records each effect call and friends replay it ----
+let rpcDepth = 0;
+const rpcFns = {};
+function packArg(a) {
+  if (a && a.isVector3) return { $v: [r2(a.x), r2(a.y), r2(a.z)] };
+  if (a && a.stats && a.mesh) return { $f: fighters.indexOf(a) };
+  if (a && a.isColor) return { $c: a.getHex() };
+  return a;
+}
+function unpackArg(a) {
+  if (a && typeof a === 'object') {
+    if (Array.isArray(a.$v)) return v3(+a.$v[0], +a.$v[1], +a.$v[2]);
+    if ('$f' in a) return fighters[a.$f];
+    if ('$c' in a) return new THREE.Color(a.$c);
+  }
+  return a;
+}
+function rpcWrap(name, fn) {
+  rpcFns[name] = fn;
+  return function (...args) {
+    if (NET.mode === 'host' && NET.inMatch && rpcDepth === 0) NET.fxq.push([name, args.map(packArg)]);
+    rpcDepth++; try { return fn(...args); } finally { rpcDepth--; }
+  };
+}
+fxHit = rpcWrap('fxHit', fxHit); fxSplash = rpcWrap('fxSplash', fxSplash); spawnDebris = rpcWrap('spawnDebris', spawnDebris);
+spawnRing = rpcWrap('spawnRing', spawnRing); fxCast = rpcWrap('fxCast', fxCast); announce = rpcWrap('announce', announce);
+toast = rpcWrap('toast', toast); say = rpcWrap('say', say); sfx = rpcWrap('sfx', sfx); horn = rpcWrap('horn', horn);
+flash = rpcWrap('flash', flash); crowdReact = rpcWrap('crowdReact', crowdReact); animF = rpcWrap('animF', animF);
+fxWallRise = rpcWrap('fxWallRise', fxWallRise); fxWallBreak = rpcWrap('fxWallBreak', fxWallBreak); fxGust = rpcWrap('fxGust', fxGust);
+fxInferno = rpcWrap('fxInferno', fxInferno); fxQuake = rpcWrap('fxQuake', fxQuake); fxDodge = rpcWrap('fxDodge', fxDodge);
+fxClash = rpcWrap('fxClash', fxClash); hitNote = rpcWrap('hitNote', hitNote); shakeFor = rpcWrap('shakeFor', shakeFor);
+ultNote = rpcWrap('ultNote', ultNote); outNote = rpcWrap('outNote', outNote); pushNote = rpcWrap('pushNote', pushNote);
+startSlow = rpcWrap('startSlow', startSlow);
+
+// ---- host: send the game state to everyone ~20x per second ----
+function netSendAll(msg) { for (const c of NET.conns.values()) if (c.open) { try { c.send(msg); } catch (e) {} } }
+function netHostSend(rdt) {
+  NET.sendT -= rdt; if (NET.sendT > 0) return; NET.sendT = 0.05;
+  netSendAll({
+    k: 's', s: state, st: r2(stateT), tm: r2(timer), w: wins, rd: round, F, rw: roundWinner,
+    f: fighters.map(f => [r2(f.pos.x), r2(f.pos.y), r2(f.pos.z), r2(f.facing.x), r2(f.facing.z), r2(f.mv.x), r2(f.mv.z), Math.round(f.strain), Math.round(f.ult),
+      r2(f.cd.p), r2(f.cd.s), r2(f.cd.d), (f.out ? 1 : 0) | (f.falling ? 2 : 0) | (f.dodgeT > 0 ? 4 : 0) | (f.flashT > 0 ? 8 : 0), r2(f.dodgeDir.x), r2(f.dodgeDir.z), f.line]),
+    p: projectiles.filter(p => !p.dead).map(p => [p.id, ORDER.indexOf(p.el), p.kind || '', r2(p.pos.x), r2(p.pos.y), r2(p.pos.z), r2(p.vel.x), r2(p.vel.z), p.r]),
+    wl: walls.filter(w => !w.dead).map(w => [w.id, r2(w.pos.x), r2(w.pos.z), r2(w.n.x), r2(w.n.z)]),
+    fx: NET.fxq.splice(0),
+  });
+}
+// ---- friend: apply the host's state ----
+function netClientNewRound() {
+  document.getElementById('spectate').classList.add('hidden');
+  for (const fl of floats) fl.d.remove(); floats.length = 0;
+  for (const f of fighters) { f.mesh.root.visible = true; f.label.style.display = ''; f.mesh.root.rotation.x = 0; if (f.netPos) f.pos.copy(f.netPos); }
+}
+function netApplySnap(s) {
+  if (!NET.inMatch || state === 'over' || !Array.isArray(s.f)) return;
+  const prevRound = round, prevF = F[0], prevW = String(wins);
+  if (['intro', 'countdown', 'play', 'roundEnd'].includes(s.s)) state = s.s; else if (s.s === 'over') state = 'roundEnd';
+  stateT = +s.st || 0; timer = +s.tm || 0; wins = s.w; round = s.rd; F = s.F; roundWinner = s.rw;
+  if (round !== prevRound) { netClientNewRound(); document.getElementById('round').textContent = `ROUND ${round}`; }
+  if (F[0] !== prevF) updateTiles();
+  if (String(wins) !== prevW) renderPips();
+  s.f.forEach((a, i) => {
+    const f = fighters[i]; if (!f || !Array.isArray(a)) return;
+    if (!f.netPos) { f.netPos = v3(a[0], a[1], a[2]); f.pos.copy(f.netPos); } else f.netPos.set(a[0], a[1], a[2]);
+    f.facing.set(a[3], 0, a[4]); if (f.facing.lengthSq() < 0.01) f.facing.set(-f.side, 0, 0); f.facing.normalize();
+    f.mv.set(a[5], 0, a[6]); f.strain = a[7]; f.ult = a[8]; f.cd.p = a[9]; f.cd.s = a[10]; f.cd.d = a[11];
+    const fl = a[12], wasOut = f.out;
+    f.out = !!(fl & 1); f.falling = !!(fl & 2); f.dodgeT = fl & 4 ? 0.1 : 0; if (fl & 8) f.flashT = 0.12;
+    f.dodgeDir.set(a[13], 0, a[14]); f.line = a[15];
+    if (f.out && !wasOut) fighterOutVisual(f);
+    if (!f.out && wasOut) { f.mesh.root.visible = true; f.label.style.display = ''; f.pos.copy(f.netPos); f.mesh.root.rotation.x = 0; }
+  });
+  const seen = new Set();
+  for (const a of s.p || []) {
+    seen.add(a[0]);
+    let p = netProj.get(a[0]);
+    if (!p) {
+      const el = ORDER[a[1]] || 'fire', kind = a[2] || null, vel = v3(a[6], 0, a[7]);
+      const mesh = makeProjMesh(el, +a[8] || 0.4, kind); mesh.rotation.y = Math.atan2(vel.x, vel.z);
+      p = { id: a[0], el, kind, r: +a[8] || 0.4, pos: v3(a[3], a[4], a[5]), vel, target: v3(a[3], a[4], a[5]), mesh };
+      netProj.set(a[0], p);
+    } else { p.target.set(a[3], a[4], a[5]); p.vel.set(a[6], 0, a[7]); }
+  }
+  for (const [id, p] of netProj) if (!seen.has(id)) { scene.remove(p.mesh); netProj.delete(id); }
+  const seenW = new Set();
+  for (const a of s.wl || []) {
+    seenW.add(a[0]);
+    if (!netWalls.has(a[0])) netWalls.set(a[0], { mesh: makeWallMesh(v3(a[1], 0, a[2]), v3(a[3], 0, a[4])), t: 0 });
+  }
+  for (const [id, w] of netWalls) if (!seenW.has(id)) { scene.remove(w.mesh); netWalls.delete(id); }
+  for (const e of s.fx || []) {
+    const fn = Array.isArray(e) && Object.prototype.hasOwnProperty.call(rpcFns, e[0]) ? rpcFns[e[0]] : null;
+    if (fn) { try { fn(...(e[1] || []).map(unpackArg)); } catch (err) { console.warn('effect', e[0], err); } }
+  }
+}
+// ---- friend: each frame, smooth toward the host's state and send our controls ----
+function clientUpdate(dt, rdt) {
+  for (const f of fighters) {
+    if (f.netPos) {
+      if (f.falling) f.pos.lerp(f.netPos, 1 - Math.exp(-20 * dt));
+      else { f.pos.addScaledVector(f.mv, dt); f.pos.lerp(f.netPos, 1 - Math.exp(-12 * dt)); f.pos.y = 0; }
+    }
+    f.flashT = Math.max(0, f.flashT - dt);
+    fighterVisual(f, dt);
+  }
+  for (const p of netProj.values()) {
+    p.pos.addScaledVector(p.vel, dt); p.pos.lerp(p.target, 1 - Math.exp(-8 * dt));
+    p.mesh.position.copy(p.pos);
+    const u = p.mesh.userData;
+    if (u.spin) { u.spin.rotation.z += dt * 16; if (p.el === 'earth') u.spin.rotation.x += dt * 7; }
+    if (u.spin2) u.spin2.rotation.z -= dt * 22;
+    if (u.tornado) p.mesh.rotation.y += dt * 9;
+    if (u.flicker) { const k = 0.85 + Math.random() * 0.3; u.flicker[0].scale.setScalar(p.r * 4.5 * k); u.flicker[1].scale.setScalar(p.r * 2.6 * (2 - k)); }
+    fxTrail(p);
+  }
+  for (const w of netWalls.values()) { w.t += dt; w.mesh.position.y = THREE.MathUtils.lerp(-1.1, 1.1, 1 - Math.pow(1 - Math.min(1, w.t / 0.22), 3)); }
+  if (human && NET.hostConn && NET.hostConn.open) {
+    const it = readIntent(human);
+    NET.edge.spc = NET.edge.spc || it.spc; NET.edge.ddg = NET.edge.ddg || it.ddg; NET.edge.ult = NET.edge.ult || it.ult;
+    if (active(human)) human.facing.copy(it.dir); // your aim responds instantly on your own screen
+    NET.inT -= rdt;
+    if (NET.inT <= 0) {
+      NET.inT = 1 / 30;
+      try { NET.hostConn.send({ k: 'in', mx: r2(it.want.x), mz: r2(it.want.z), ax: r2(it.dir.x), az: r2(it.dir.z), atk: it.atk, spc: NET.edge.spc, ddg: NET.edge.ddg, ult: NET.edge.ult }); } catch (e) {}
+      NET.edge.spc = NET.edge.ddg = NET.edge.ult = false;
+    }
+  }
+}
+
+// ---- rooms, lobby and match start ----
+const onlineEl = document.getElementById('online');
+const PEER_LIB = 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';
+function loadPeerJS() {
+  if (window.Peer) return Promise.resolve();
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = PEER_LIB; s.onload = res; s.onerror = () => rej(new Error('load')); document.head.appendChild(s); });
+}
+const cleanName = (n) => String(n || '').replace(/[^\p{L}\p{N} _.-]/gu, '').trim().slice(0, 14) || 'Player';
+const clampInt = (v, a, b) => Math.max(a, Math.min(b, Math.round(+v || 0)));
+const cleanLook = (l) => ({ body: l && l.body === 'female' ? 'female' : 'male', hair: clampInt(l && l.hair, 0, 9), hairColor: clampInt(l && l.hairColor, 0, 9),
+  outfit: l && OUTFITS.some(o => o.id === l.outfit) ? l.outfit : 'suit' });
+function makeCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 5; i++) c += A[(Math.random() * A.length) | 0]; return c; }
+const onNameEl = document.getElementById('onName'), onCodeEl = document.getElementById('onCode'), onMsgEl = document.getElementById('onMsg');
+try { onNameEl.value = localStorage.getItem('aoe-name') || ''; } catch (e) {}
+function myName() { const n = cleanName(onNameEl.value); try { localStorage.setItem('aoe-name', n); } catch (e) {} return n; }
+function netError(text) { onMsgEl.textContent = text; if (onlineEl.classList.contains('hidden')) openModal(onlineEl); }
+function showOnlineView(lobby) {
+  document.getElementById('onStart').classList.toggle('hidden', lobby);
+  document.getElementById('onLobby').classList.toggle('hidden', !lobby);
+  document.getElementById('onCloseRow').classList.toggle('hidden', lobby);
+  if (lobby) {
+    document.getElementById('onCodeShow').textContent = NET.code;
+    document.getElementById('onGo').classList.toggle('hidden', NET.mode !== 'host');
+    document.getElementById('onWait').classList.toggle('hidden', NET.mode === 'host');
+    renderLobby();
+  }
+}
+function renderLobby() {
+  for (const [t, id] of [[0, 'onBlue'], [1, 'onRed']]) {
+    const col = document.getElementById(id); col.textContent = '';
+    const ps = NET.lobby.filter(p => p.team === t);
+    for (const p of ps) {
+      const d = document.createElement('div'); d.className = 'pl' + (p.id === NET.myId ? ' me' : '');
+      d.textContent = `${(ELEMENTS[p.el] || ELEMENTS.fire).icon} ${p.name}${p.id === 'host' ? ' 👑' : ''}${p.id === NET.myId ? ' (you)' : ''}`;
+      col.appendChild(d);
+    }
+    for (let i = ps.length; i < 3; i++) { const d = document.createElement('div'); d.className = 'pl cpu'; d.textContent = '🤖 computer'; col.appendChild(d); }
+  }
+  const me = NET.lobby.find(p => p.id === NET.myId);
+  document.querySelectorAll('#onTeam button').forEach(b => b.classList.toggle('on', !!me && +b.dataset.t === me.team));
+  document.querySelectorAll('#onEl button').forEach(b => b.classList.toggle('on', !!me && b.dataset.e === me.el));
+}
+function netLobbyBroadcast() {
+  netSendAll({ k: 'lobby', code: NET.code, players: NET.lobby.map(p => ({ id: p.id, name: p.name, team: p.team, el: p.el })) });
+  renderLobby();
+}
+function netPick(team, el) {
+  if (NET.mode === 'host') {
+    const me = NET.lobby.find(p => p.id === 'host'); if (!me) return;
+    if (team !== undefined && team !== me.team && NET.lobby.filter(p => p.team === team).length < 3) me.team = team;
+    if (el) me.el = el;
+    netLobbyBroadcast();
+  } else if (NET.hostConn && NET.hostConn.open) {
+    const me = NET.lobby.find(p => p.id === NET.myId);
+    NET.hostConn.send({ k: 'pick', team: team !== undefined ? team : me && me.team, el: el || (me && me.el) });
+  }
+}
+async function netHost() {
+  onMsgEl.textContent = 'Creating a room…';
+  try { await loadPeerJS(); } catch (e) { return netError('Could not load online play. Check your internet connection.'); }
+  netCleanup();
+  NET.mode = 'host'; NET.myId = 'host'; NET.code = makeCode();
+  NET.peer = new window.Peer('aoe-' + NET.code);
+  NET.peer.on('open', () => {
+    onMsgEl.textContent = '';
+    NET.lobby = [{ id: 'host', name: myName(), team: 0, el: previewEl, look: { ...playerLook } }];
+    showOnlineView(true); netLobbyBroadcast();
+  });
+  NET.peer.on('connection', (conn) => {
+    conn.on('open', () => NET.conns.set(conn.peer, conn));
+    conn.on('data', (m) => hostOnData(conn, m));
+    conn.on('close', () => hostOnLeave(conn.peer));
+    conn.on('error', () => hostOnLeave(conn.peer));
+  });
+  NET.peer.on('error', (e) => {
+    if (e.type === 'unavailable-id') { netHost(); return; } // code already taken: pick another
+    if (NET.mode === 'host' && !NET.peer.open) netError('Could not create the room (' + (e.type || 'network') + '). Try again.');
+  });
+}
+function hostOnData(conn, msg) {
+  if (!msg || typeof msg !== 'object') return;
+  const id = conn.peer;
+  if (msg.k === 'hello') {
+    if (NET.lobby.some(p => p.id === id)) return;
+    if (NET.inMatch || NET.lobby.length >= 6) {
+      try { conn.send({ k: 'busy', why: NET.inMatch ? 'A match is in progress in that room. Try again when it ends.' : 'That room is full (6 players).' }); } catch (e) {}
+      setTimeout(() => conn.close(), 400); return;
+    }
+    const counts = [0, 1].map(t => NET.lobby.filter(p => p.team === t).length);
+    const name = cleanName(msg.name);
+    NET.lobby.push({ id, name, team: counts[0] <= counts[1] ? 0 : 1, el: ORDER[(Math.random() * 4) | 0], look: cleanLook(msg.look) });
+    toast(`${name} joined the room`, '#7dff9a'); sfx('zone');
+    netLobbyBroadcast();
+  } else if (msg.k === 'pick') {
+    const p = NET.lobby.find(q => q.id === id); if (!p || NET.inMatch) return;
+    if ((msg.team === 0 || msg.team === 1) && msg.team !== p.team && NET.lobby.filter(q => q.team === msg.team).length < 3) p.team = msg.team;
+    if (ORDER.includes(msg.el)) p.el = msg.el;
+    netLobbyBroadcast();
+  } else if (msg.k === 'in') {
+    const prev = NET.intents.get(id) || {};
+    NET.intents.set(id, { mx: c1(msg.mx), mz: c1(msg.mz), ax: c1(msg.ax), az: c1(msg.az), atk: !!msg.atk,
+      spc: !!(prev.spc || msg.spc), ddg: !!(prev.ddg || msg.ddg), ult: !!(prev.ult || msg.ult) });
+  }
+}
+function hostOnLeave(id) {
+  if (!NET.conns.has(id) && !NET.lobby.some(p => p.id === id)) return;
+  NET.conns.delete(id); NET.intents.delete(id);
+  const p = NET.lobby.find(q => q.id === id);
+  NET.lobby = NET.lobby.filter(q => q.id !== id);
+  const f = fighters.find(q => q.owner === id);
+  if (f && NET.inMatch) {
+    f.remote = false; f.owner = null; f.netName = null;
+    f.label.querySelector('span').textContent = ELEMENTS[f.el].name.toUpperCase();
+  }
+  if (p) toast(`${p.name} left${f && NET.inMatch ? ' — a computer player takes over' : ''}`, '#ff9a8a');
+  netLobbyBroadcast();
+}
+async function netJoin(rawCode) {
+  const code = String(rawCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  if (code.length !== 5) return netError('Room codes have 5 letters and numbers.');
+  onMsgEl.textContent = 'Connecting…';
+  try { await loadPeerJS(); } catch (e) { return netError('Could not load online play. Check your internet connection.'); }
+  netCleanup();
+  NET.mode = 'client'; NET.code = code;
+  NET.peer = new window.Peer();
+  NET.peer.on('open', (id) => {
+    NET.myId = id;
+    const conn = NET.peer.connect('aoe-' + code, { reliable: true });
+    NET.hostConn = conn;
+    clearTimeout(NET.joinTimer);
+    NET.joinTimer = setTimeout(() => { if (!conn.open && NET.mode === 'client') { netLeave(true); netError('Could not reach that room. Check the code, or the network may block direct connections.'); } }, 12000);
+    conn.on('open', () => { clearTimeout(NET.joinTimer); onMsgEl.textContent = ''; conn.send({ k: 'hello', name: myName(), look: playerLook }); showOnlineView(true); });
+    conn.on('data', clientOnData);
+    conn.on('close', () => { if (NET.mode === 'client' && NET.hostConn === conn) { netLeave(true); netError('The host closed the room.'); } });
+  });
+  NET.peer.on('error', (e) => {
+    if (NET.mode !== 'client') return;
+    netLeave(true);
+    netError(e.type === 'peer-unavailable' ? 'Room not found. Check the code.' : 'Connection problem (' + (e.type || 'network') + ').');
+  });
+}
+function clientOnData(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.k === 'lobby' && Array.isArray(msg.players)) {
+    NET.lobby = msg.players.map(p => ({ id: String(p.id), name: cleanName(p.name), team: p.team === 1 ? 1 : 0, el: ORDER.includes(p.el) ? p.el : 'fire' }));
+    renderLobby();
+  } else if (msg.k === 'start' && Array.isArray(msg.roster)) {
+    startOnlineMatch(msg.roster.map(r => ({ team: r.team === 1 ? 1 : 0, slot: clampInt(r.slot, 0, 2), el: ORDER.includes(r.el) ? r.el : 'fire',
+      look: cleanLook(r.look), owner: r.owner ? String(r.owner) : null, name: r.name ? cleanName(r.name) : null })), THEMES[msg.theme] ? msg.theme : 'night');
+  } else if (msg.k === 's') netApplySnap(msg);
+  else if (msg.k === 'end' && Array.isArray(msg.stats)) {
+    msg.stats.forEach((s, i) => { const f = fighters[i]; if (f && Array.isArray(s)) { f.stats.hits = +s[0] || 0; f.stats.kos = +s[1] || 0; f.stats.outs = +s[2] || 0; } });
+    if (Array.isArray(msg.w)) wins = msg.w; roundLog = Array.isArray(msg.rl) ? msg.rl : [];
+    for (const p of netProj.values()) scene.remove(p.mesh); netProj.clear();
+    showEnd();
+  } else if (msg.k === 'back') netToLobbyScreen();
+  else if (msg.k === 'busy') { netLeave(true); netError(String(msg.why || 'Could not join that room.')); }
+}
+function netHostStart() {
+  if (NET.mode !== 'host') return;
+  const used = new Set(), roster = [];
+  for (const t of [0, 1]) {
+    const hs = NET.lobby.filter(p => p.team === t).slice(0, 3);
+    for (const slot of [1, 0, 2]) {
+      const h = hs.shift();
+      if (h) roster.push({ team: t, slot, el: h.el, look: { ...h.look }, owner: h.id, name: h.name });
+      else { const el = ORDER[(Math.random() * 4) | 0]; roster.push({ team: t, slot, el, look: randomLook(el, t, used), owner: null, name: null }); }
+    }
+  }
+  const theme = arenaChoice === 'random' ? Object.keys(THEMES)[(Math.random() * 3) | 0] : arenaChoice;
+  netSendAll({ k: 'start', roster, theme });
+  startOnlineMatch(roster, theme);
+}
+function startOnlineMatch(roster, theme) {
+  closeModal(onlineEl); initAudio(); clearMatch(); removePreview(); applyTheme(theme);
+  for (const p of netProj.values()) scene.remove(p.mesh); netProj.clear();
+  for (const w of netWalls.values()) scene.remove(w.mesh); netWalls.clear();
+  for (const r of roster) {
+    const mine = r.owner === NET.myId;
+    const f = makeFighter(r.team, r.el, r.slot, mine, { ...r.look });
+    f.owner = r.owner; f.netName = r.owner ? r.name : null;
+    f.remote = NET.mode === 'host' && !!r.owner && !mine;
+    if (r.owner) f.label.querySelector('span').textContent = `${mine ? 'YOU' : r.name.toUpperCase()} · ${ELEMENTS[r.el].name.toUpperCase()}`;
+    fighters.push(f);
+  }
+  human = fighters.find(f => f.human) || null; p2 = null; roundLog = [];
+  chosenEl = human ? human.el : chosenEl;
+  NET.inMatch = true; NET.intents.clear(); netMenuOpen = false; NET.fxq.length = 0;
+  wins = [0, 0]; round = 1;
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('end').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  if (human) {
+    const S = ELEMENTS[human.el];
+    document.getElementById('abSName').textContent = S.special.name;
+    for (const id of ['abP', 'abS', 'abD', 'abU']) document.getElementById(id).style.setProperty('--elc', S.css);
+    document.getElementById('abUName').textContent = ULT_NAMES[human.el][0] + ULT_NAMES[human.el].slice(1).toLowerCase();
+  }
+  for (const fl of floats) fl.d.remove(); floats.length = 0;
+  if (NET.mode === 'host') resetRound();
+  else {
+    state = 'intro'; stateT = INTRO_TIME; F = [0, 0]; timer = ROUND_TIME;
+    for (const f of fighters) { f.pos.set(f.side * 3, 0, (f.slot - 1) * 4.5); f.netPos = f.pos.clone(); f.mesh.root.rotation.set(0, Math.atan2(-f.side, 0), 0); }
+    updateTiles(); renderPips(); document.getElementById('round').textContent = 'ROUND 1';
+    document.getElementById('skip').classList.add('hidden'); document.getElementById('spectate').classList.add('hidden');
+  }
+}
+function netToLobbyScreen() {
+  NET.inMatch = false; netMenuOpen = false;
+  for (const p of netProj.values()) scene.remove(p.mesh); netProj.clear();
+  for (const w of netWalls.values()) scene.remove(w.mesh); netWalls.clear();
+  clearMatch(); state = 'menu';
+  for (const id of ['hud', 'end', 'spectate', 'pause']) document.getElementById(id).classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  rebuildPreview();
+  openModal(onlineEl); showOnlineView(true);
+}
+function netBackToLobby() { netSendAll({ k: 'back' }); netToLobbyScreen(); }
+function netCleanup() {
+  clearTimeout(NET.joinTimer);
+  for (const c of NET.conns.values()) { try { c.close(); } catch (e) {} }
+  if (NET.hostConn) { try { NET.hostConn.close(); } catch (e) {} }
+  if (NET.peer) { try { NET.peer.destroy(); } catch (e) {} }
+  NET.peer = null; NET.hostConn = null; NET.conns.clear(); NET.intents.clear(); NET.lobby = []; NET.mode = 'off'; NET.myId = 'host';
+}
+function netLeave(keepModal = false) {
+  const wasMatch = NET.inMatch || state === 'over';
+  NET.inMatch = false; netMenuOpen = false;
+  netCleanup();
+  for (const p of netProj.values()) scene.remove(p.mesh); netProj.clear();
+  for (const w of netWalls.values()) scene.remove(w.mesh); netWalls.clear();
+  if (wasMatch) { document.getElementById('pause').classList.add('hidden'); quitToMenu(); }
+  showOnlineView(false);
+  if (!keepModal) closeModal(onlineEl);
+}
+// buttons
+document.getElementById('onlineBtn').addEventListener('click', () => { onMsgEl.textContent = ''; showOnlineView(NET.mode !== 'off'); openModal(onlineEl); });
+document.getElementById('onHost').addEventListener('click', () => { initAudio(); netHost(); });
+document.getElementById('onJoin').addEventListener('click', () => { initAudio(); netJoin(onCodeEl.value); });
+onCodeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') netJoin(onCodeEl.value); });
+document.getElementById('onLeave').addEventListener('click', () => netLeave());
+document.getElementById('onClose').addEventListener('click', () => closeModal(onlineEl));
+document.getElementById('onGo').addEventListener('click', netHostStart);
+document.getElementById('onTeam').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) netPick(+b.dataset.t, undefined); });
+document.getElementById('onEl').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) netPick(undefined, b.dataset.e); });
+document.getElementById('onCopy').addEventListener('click', async () => {
+  const link = `${location.origin}${location.pathname}?join=${NET.code}`;
+  try { await navigator.clipboard.writeText(link); onMsgEl.style.color = '#7dff9a'; onMsgEl.textContent = 'Invite link copied! Send it to your friends.'; }
+  catch (e) { onMsgEl.textContent = link; }
+  setTimeout(() => { onMsgEl.style.color = ''; }, 3000);
+});
+addEventListener('beforeunload', () => { if (NET.mode !== 'off') netCleanup(); });
+
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   applyQuality();
@@ -2359,8 +2873,16 @@ loadLooks((d, n) => { document.getElementById('loading').textContent = `Loading 
   document.getElementById('cards').classList.remove('loading');
   document.getElementById('picker').classList.remove('hidden');
   renderPicker(); rebuildPreview();
-  let seen = false; try { seen = !!localStorage.getItem('aoe-howto-seen'); } catch (e) {}
-  if (!seen) openHow();
+  const joinCode = new URLSearchParams(location.search).get('join');
+  if (joinCode) { // opened from a friend's invite link
+    onCodeEl.value = joinCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    showOnlineView(false); openModal(onlineEl);
+    onMsgEl.style.color = '#7dff9a'; onMsgEl.textContent = 'Your friend invited you! Type your name and press Join.';
+    onNameEl.focus();
+  } else {
+    let seen = false; try { seen = !!localStorage.getItem('aoe-howto-seen'); } catch (e) {}
+    if (!seen) openHow();
+  }
 }).catch((e) => {
   console.error(e);
   document.getElementById('loading').textContent = 'Could not load the character models. Start the game through the local server (python -m http.server) rather than opening the file directly.';

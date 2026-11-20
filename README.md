@@ -10,6 +10,10 @@ Works on PC and on phones/tablets (on-screen joystick and buttons, attacks auto-
 Choose **Easy / Normal / Hard** on the menu, customise your fighter (body, outfit, hair), and use
 **⚙️ Settings** for volume, announcer voice, graphics level and a frame-rate counter.
 
+**🌐 Online with friends:** press **Online** on the menu → *Host a room* and share the 5-letter code or the
+invite link. Up to 6 players (3 per team); computer fighters fill empty spots. Players connect directly to each
+other (WebRTC via [PeerJS](https://peerjs.com)); the host's game runs the match.
+
 **Local 2-player:** Co-op (both on blue) or Versus (one per team) on the same PC — Player 2 uses a controller
 or the arrow keys (Enter attack · Right Shift special · Right Ctrl dodge · / ultimate).
 
