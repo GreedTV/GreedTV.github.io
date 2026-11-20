@@ -43,6 +43,7 @@ export const ELEMENT_STYLE = {
   water: { panel: 0x1a8ad8, glow: 0x3fb4ff },
   earth: { panel: 0x8a6436, glow: 0xe0a050 },
   air:   { panel: 0xc8d8e6, glow: 0xbff0ff },
+  lightning: { panel: 0xe0a800, glow: 0xffe14a },
 };
 
 // game action -> clip name in Anims.glb (from the Universal Animation Library)
@@ -159,7 +160,7 @@ const KITS = [
 
 function kitMaterial(orig, marks, teamColor, el, kit) {
   const m = orig.clone();
-  const S = ELEMENT_STYLE[el];
+  const S = ELEMENT_STYLE[el] || ELEMENT_STYLE.fire;
   const U = {
     uSuit: { value: new THREE.Color(teamColor).multiplyScalar(0.55) },
     uPanel: { value: new THREE.Color(S.panel) },
@@ -216,7 +217,7 @@ export function makeCharacter(look) {
   const style = styles[wrap(look.hair | 0, styles.length)];
   const hairHex = HAIR_COLORS[wrap(look.hairColor | 0, HAIR_COLORS.length)].hex;
   const kit = (OUTFITS.find(o => o.id === look.outfit) || OUTFITS[0]).kit;
-  const glow = new THREE.Color(ELEMENT_STYLE[look.el].glow);
+  const glow = new THREE.Color((ELEMENT_STYLE[look.el] || ELEMENT_STYLE.fire).glow);
   const model = SkeletonUtils.clone(B.root);
   const mats = [], bones = {};
   model.traverse(o => { if (o.isBone) bones[o.name] = o; });

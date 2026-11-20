@@ -44,8 +44,8 @@
   #terr .seg { flex: 1; border-radius: 3px; transition: background .3s; }
   #terr .mark { position: absolute; top: -4px; width: 4px; height: 22px; background: var(--gold); border-radius: 2px; transform: translateX(-50%); transition: left .4s; box-shadow: 0 0 8px var(--gold); }
   #abilities { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; }
-  .ab { position: relative; width: 92px; height: 64px; background: var(--panel); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,.12); }
-  .ab b { font-size: 14px; position: relative; } .ab small { font-size: 11px; color: var(--muted); position: relative; }
+  .ab { position: relative; width: 104px; height: 64px; background: var(--panel); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,.12); }
+  .ab b { font-size: 12px; position: relative; max-width: 96%; text-align: center; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; } .ab small { font-size: 11px; color: var(--muted); position: relative; }
   .ab .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: rgba(0,0,0,.65); }
   .ab.ready { border-color: var(--elc, #fff); box-shadow: 0 0 12px -2px var(--elc, #fff); }
   #help { position: absolute; bottom: 22px; left: 18px; font-size: 12px; color: var(--muted); background: var(--panel); padding: 8px 12px; border-radius: 8px; line-height: 1.6; }
@@ -78,8 +78,7 @@
   #endStats tr.you td { color: var(--gold); font-weight: 800; }
   #endStats .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; }
   #endStats .mvp { background: var(--gold); color: #1a1400; font-size: 10px; font-weight: 900; border-radius: 4px; padding: 1px 5px; margin-left: 6px; letter-spacing: 1px; }
-  .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 190px)); gap: 14px; }
-  @media (max-width: 860px) { .cards { grid-template-columns: repeat(2, minmax(0, 190px)); } }
+  .cards { display: grid; grid-template-columns: repeat(5, minmax(0, 175px)); gap: 12px; }
   .card { background: var(--panel); border: 2px solid rgba(255,255,255,.1); border-radius: 14px; padding: 16px; cursor: pointer; text-align: center; transition: transform .15s, border-color .15s, opacity .2s; }
   .card:hover { transform: translateY(-4px); border-color: var(--elc); }
   .cards.loading .card { opacity: .4; pointer-events: none; }
@@ -231,7 +230,8 @@
   #swatches i { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,.25); display: block; }
   #swatches i.on { border-color: var(--gold); box-shadow: 0 0 6px var(--gold); }
   @media (max-width: 900px), (max-height: 820px) {
-    .menu .cards { grid-template-columns: repeat(4, minmax(0, 150px)); gap: 8px; }
+    .menu .cards { grid-template-columns: repeat(5, minmax(0, 130px)); gap: 6px; width: min(680px, 100%); }
+    .menu .card { padding: 8px 4px; } .menu .card h3 { font-size: 12px; letter-spacing: 0; }
     .menu .card div.d, .menuTop p { display: none; }
     .menuTop { margin-top: 30px; }
     .menu .card h3 { font-size: 14px; margin: 2px 0 0; }
@@ -370,7 +370,7 @@
       <label>Your team</label>
       <div class="types" id="onTeam"><button type="button" data-t="0">Blue</button><button type="button" data-t="1">Red</button></div>
       <label>Your element</label>
-      <div class="types" id="onEl"><button type="button" data-e="fire">🔥 Fire</button><button type="button" data-e="water">💧 Water</button><button type="button" data-e="earth">⛰️ Earth</button><button type="button" data-e="air">🌪️ Air</button></div>
+      <div class="types" id="onEl"><button type="button" data-e="fire">🔥 Fire</button><button type="button" data-e="water">💧 Water</button><button type="button" data-e="earth">⛰️ Earth</button><button type="button" data-e="air">🌪️ Air</button><button type="button" data-e="lightning">⚡ Lightning</button></div>
       <p class="onnote" id="onWait">Waiting for the host to start the match…</p>
       <div class="actions" style="gap:8px"><button type="button" class="btn ghost" id="onLeave">Leave</button><button type="button" class="btn" id="onGo">Start match</button></div>
     </div>
@@ -448,7 +448,7 @@
 } }</script>
 <script type="module">
 import * as THREE from 'three';
-import { loadLooks, makeCharacter, randomLook, HAIR_STYLES, HAIR_COLORS, OUTFITS, CLIPS as ANIM_CLIPS, CLIP_NAMES } from './looks.js';
+import { loadLooks, makeCharacter, randomLook, HAIR_STYLES, HAIR_COLORS, OUTFITS, CLIPS as ANIM_CLIPS, CLIP_NAMES } from './looks.js?v=5'; // bump ?v= whenever looks.js changes, so browsers never mix old and new files
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -462,7 +462,8 @@ const TEAM = [
   { name: 'Blue', color: 0x2f6bff, css: '#4f86ff', side: -1 },
   { name: 'Red',  color: 0xe83a4f, css: '#ff5a6e', side:  1 },
 ];
-// To add a new element later: add an entry here + a projectile look in makeProjMesh + effects in FX_EL + a special in doSpecial.
+// To add a new element: add an entry here and in ORDER, a suit colour in looks.js (ELEMENT_STYLE), a projectile look in
+// makeProjMesh, effects in fxTrail / fxHit / fxPowers / fxCast, sounds in sfx, a special in doSpecial and an ultimate in useUlt.
 const ELEMENTS = {
   fire:  { name: 'Fire',  icon: '🔥', color: 0xff6a1a, css: '#ff7a2f', speed: 7.2, weight: 1,
            anim: { primary: ['punchA', 'punchB'], pSpeed: 2.3, special: 'cast', sSpeed: 1.1 },
@@ -484,8 +485,13 @@ const ELEMENTS = {
            primary: { cd: 0.38, speed: 34, radius: 0.38, force: 5.5, strain: 5, life: 1.1 },
            special: { cd: 5, kind: 'gust', name: 'Gust' },
            desc: 'Quick and slippery, long dodge. Special: a gust that shoves enemies and blows away shots.' },
+  lightning: { name: 'Lightning', icon: '⚡', color: 0xffd23a, css: '#ffe14a', speed: 7.6, weight: 1,
+           anim: { primary: ['cast'], pSpeed: 2.4, special: 'cast', sSpeed: 1.2 },
+           primary: { cd: 0.42, speed: 42, radius: 0.3, force: 4.8, strain: 7, life: 0.8 },
+           special: { cd: 4.5, kind: 'chain', name: 'Chain lightning' },
+           desc: 'The fastest bolts in the arena. Special: zaps the nearest enemy, then jumps to another.' },
 };
-const ORDER = ['fire', 'water', 'earth', 'air'];
+const ORDER = ['fire', 'water', 'earth', 'air', 'lightning'];
 const ATTACK_ANIMS = new Set(['punchA', 'punchB', 'cast', 'stomp']);
 
 // ================= RENDERER / SCENE / POST =================
@@ -828,6 +834,7 @@ const COL = {
   smoke: C(0x2a2a30), dust: C(0x8a6e52), dustLight: C(0xb09a80),
   water: C(0x6fd0ff, 0.9), waterDeep: C(0x2a7fff, 0.35), foam: C(0xdff4ff, 0.8),
   air: C(0xeaf8ff, 0.55), airFade: C(0x9fd8ff, 0.12), gold: C(0xffd54a, 1.6), white: C(0xffffff, 1.2),
+  spark: C(0xfff3a0, 2.2), sparkFade: C(0x7a5cff, 0.35),
 };
 const v3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const rnd = (s) => (Math.random() - 0.5) * s;
@@ -917,6 +924,8 @@ function fxTrail(p) {
     GLOW.emit(P.clone().addScaledVector(s, Math.cos(a) * p.r * 1.2).add(v3(0, Math.sin(a) * p.r * 1.2, 0)), v3(), COL.air, COL.airFade, p.r * 1.3, 0.3, 0, 1.2);
   } else if (p.el === 'earth' && Math.random() < 0.35) {
     SMOKE.emit(P, rv(1), COL.dust, null, p.r * 2, 0.5, 0, 1.5, 1, 0.5);
+  } else if (p.el === 'lightning') {
+    for (let i = 0; i < 2; i++) GLOW.emit(P.clone().add(rv(0.5)), rv(3), COL.spark, COL.sparkFade, 0.18 + Math.random() * 0.15, 0.18, 0, 0, 2);
   }
 }
 function perp(v) { const n = v3(-v.z, 0, v.x); return n.lengthSq() > 0 ? n.normalize() : n; }
@@ -930,6 +939,8 @@ function fxHit(pos, el, power, dir) {
   } else if (el === 'earth') {
     spawnDebris(pos, 5 + Math.round(power / 4), 6, 0.16, dir);
     for (let i = 0; i < 8; i++) SMOKE.emit(pos, rv(4).addScaledVector(dir, 2), COL.dust, null, 1.3, 0.8, 0, 1.6, 2.5, 0.6);
+  } else if (el === 'lightning') {
+    for (let i = 0; i < n; i++) GLOW.emit(pos, rv(14), COL.spark, COL.sparkFade, 0.25 + Math.random() * 0.3, 0.3, 0, 0, 4);
   } else {
     for (let i = 0; i < n; i++) GLOW.emit(pos, rv(9).addScaledVector(dir, 4), COL.air, COL.airFade, 0.6, 0.4, 0, 1.5, 3);
   }
@@ -962,6 +973,8 @@ function fxPowers(el, m, dt) {
       if (Math.random() < 0.06) GLOW.emit(HP, v3(0, -1, 0), COL.foam, null, 0.1, 0.6, 9);
     } else if (el === 'earth') {
       if (Math.random() < 0.12) SMOKE.emit(HP, v3(rnd(0.3), -0.3, rnd(0.3)), COL.dustLight, null, 0.25, 0.6, 2, 1, 1, 0.5);
+    } else if (el === 'lightning') {
+      if (Math.random() < 0.7) GLOW.emit(HP.clone().add(rv(0.3)), rv(2), COL.spark, COL.sparkFade, 0.12 + Math.random() * 0.1, 0.12, 0, 0, 3);
     } else {
       const a = perfNow * 9 + i * Math.PI;
       GLOW.emit(HP.clone().add(v3(Math.cos(a) * 0.25, 0, Math.sin(a) * 0.25)), v3(0, 0.6, 0), COL.air, COL.airFade, 0.14, 0.3, 0, 1);
@@ -974,7 +987,7 @@ function fxPowers(el, m, dt) {
 }
 function fxCast(f, dir, big = false) {
   const p = f.pos.clone().addScaledVector(dir, 0.9); p.y = 1.35;
-  const c = { fire: COL.fireHot, water: COL.foam, earth: COL.dustLight, air: COL.air }[f.el];
+  const c = { fire: COL.fireHot, water: COL.foam, earth: COL.dustLight, air: COL.air, lightning: COL.spark }[f.el];
   for (let i = 0; i < (big ? 18 : 6); i++) (f.el === 'earth' ? SMOKE : GLOW).emit(p, rv(3).addScaledVector(dir, 4), c, null, big ? 0.6 : 0.35, 0.25, 0, 1, 3, 0.8);
 }
 
@@ -1037,16 +1050,18 @@ function sfx(type, el, loud = true) {
       if (el === 'fire') { noise(0.22, 900, 'bandpass', 0.6 * v, 0.8); noise(0.08, 3000, 'highpass', 0.15 * v); }
       else if (el === 'water') { noise(0.2, 1200, 'bandpass', 0.45 * v, 2); tone(500, 900, 0.12, 'sine', 0.08 * v); }
       else if (el === 'earth') { tone(110, 45, 0.22, 'sine', 0.5 * v); noise(0.15, 300, 'lowpass', 0.5 * v); }
+      else if (el === 'lightning') { tone(2600, 260, 0.12, 'sawtooth', 0.1 * v); noise(0.08, 5000, 'highpass', 0.3 * v); }
       else { noise(0.18, 2600, 'bandpass', 0.4 * v, 1.5); }
       break;
     case 'special':
-      noise(0.5, { fire: 800, water: 600, earth: 160, air: 2000 }[el], 'bandpass', 0.9 * v, 0.7);
+      noise(0.5, { fire: 800, water: 600, earth: 160, air: 2000, lightning: 3500 }[el], 'bandpass', 0.9 * v, 0.7);
       tone(260, 90, 0.4, 'triangle', 0.2 * v);
       break;
     case 'hit':
       tone(160, 42, 0.22, 'sine', 0.6 * v); noise(0.07, 1400, 'lowpass', 0.45 * v); noise(0.03, 4000, 'highpass', 0.15 * v);
       if (el === 'water') noise(0.25, 1800, 'bandpass', 0.3 * v, 1.5);
       if (el === 'earth') { noise(0.2, 250, 'lowpass', 0.5 * v); }
+      if (el === 'lightning') { noise(0.12, 6000, 'highpass', 0.35 * v); tone(1800, 120, 0.1, 'square', 0.05 * v); }
       break;
     case 'splash': noise(0.9, 900, 'lowpass', 0.8); noise(0.4, 2500, 'bandpass', 0.25); tone(90, 40, 0.4, 'sine', 0.3); break;
     case 'clash': noise(0.12, 3000, 'highpass', 0.3 * v); tone(800, 300, 0.1, 'square', 0.03 * v); break;
@@ -1054,8 +1069,9 @@ function sfx(type, el, loud = true) {
     case 'beep': tone(660, 660, 0.15, 'square', 0.06); break;
     case 'go': tone(880, 880, 0.35, 'square', 0.07); break;
     case 'dodge': noise(0.15, 1800, 'bandpass', 0.2 * v, 1); break;
+    case 'thunder': noise(1.4, 220, 'lowpass', 1.0); noise(0.15, 4000, 'highpass', 0.5); tone(60, 30, 1.2, 'sine', 0.5); break;
     case 'ult':
-      tone(80, 30, 0.9, 'sine', 0.7); noise(1.0, { fire: 700, water: 500, earth: 120, air: 1600 }[el], 'bandpass', 1.0, 0.6);
+      tone(80, 30, 0.9, 'sine', 0.7); noise(1.0, { fire: 700, water: 500, earth: 120, air: 1600, lightning: 300 }[el], 'bandpass', 1.0, 0.6);
       tone(220, 880, 0.35, 'sawtooth', 0.05); break;
   }
 }
@@ -1256,7 +1272,7 @@ document.getElementById('swatches').addEventListener('click', (e) => { const i =
 
 function clearMatch() {
   for (const f of fighters) { scene.remove(f.mesh.root); f.label.remove(); }
-  fighters = []; human = null; p2 = null; clearProjectiles();
+  fighters = []; human = null; p2 = null; clearProjectiles(); storms = [];
   document.getElementById('p2hud').classList.add('hidden');
 }
 function clearProjectiles() {
@@ -1295,13 +1311,13 @@ function startMatch(el) {
   const S = ELEMENTS[el];
   document.getElementById('abSName').textContent = S.special.name;
   for (const id of ['abP', 'abS', 'abD', 'abU']) document.getElementById(id).style.setProperty('--elc', S.css);
-  document.getElementById('abUName').textContent = ULT_NAMES[el][0] + ULT_NAMES[el].slice(1).toLowerCase();
+  document.getElementById('abUName').textContent = ultLabel(el);
   for (const f of floats) f.d.remove(); floats.length = 0;
   resetRound();
 }
 const NUM = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
 function resetRound() {
-  F = [0, 0]; timer = ROUND_TIME; clearProjectiles(); roundWinner = -1;
+  F = [0, 0]; timer = ROUND_TIME; clearProjectiles(); roundWinner = -1; storms = [];
   for (const f of fighters) {
     f.out = false; f.falling = false; f.strain = 0; f.line = 0; f.vy = 0;
     f.kb.set(0, 0, 0); f.mv.set(0, 0, 0); f.cd.p = f.cd.s = f.cd.d = 0; f.dodgeT = f.stunT = 0; f.ult = 0;
@@ -1333,6 +1349,9 @@ const MAT = {
   earth: new THREE.MeshStandardMaterial({ color: 0x8b6b4a, flatShading: true, roughness: 0.95 }),
   air: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.1, 1.25, 1.4), transparent: true, opacity: 0.65, depthWrite: false }),
   airGlow: spriteMat(0xbfefff, 0.6, 0.4),
+  bolt: new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 3.6, 1.6) }),
+  boltGlow: spriteMat(0xffd23a, 1.4, 0.8),
+  boltLine: new THREE.MeshBasicMaterial({ color: new THREE.Color(3.5, 3.2, 1.8), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
 };
 const ULT_KINDS = new Set(['tsunami', 'tornado']);
 function makeProjMesh(el, r, kind) {
@@ -1357,6 +1376,10 @@ function makeProjMesh(el, r, kind) {
     const gl = new THREE.Sprite(MAT.waterGlow); gl.scale.setScalar(r * 3.2); g.add(gl);
   } else if (el === 'earth') {
     const m = new THREE.Mesh(GEO.rock, MAT.earth); m.scale.setScalar(r); m.castShadow = true; g.add(m); g.userData.spin = m;
+  } else if (el === 'lightning') {
+    // a bright streak stretched along its flight direction (the group faces +Z = forward)
+    const m = new THREE.Mesh(GEO.sphere, MAT.bolt); m.scale.set(r * 0.45, r * 0.45, r * 3.2); g.add(m);
+    const gl = new THREE.Sprite(MAT.boltGlow); gl.scale.setScalar(r * 5); g.add(gl); g.userData.flicker = [gl, gl];
   } else {
     const m = new THREE.Mesh(GEO.torus, MAT.air); m.scale.setScalar(r); g.add(m); g.userData.spin = m;
     const m2 = new THREE.Mesh(GEO.torus, MAT.air); m2.scale.setScalar(r * 0.6); g.add(m2); g.userData.spin2 = m2;
@@ -1403,6 +1426,28 @@ function doSpecial(f, dir) {
       fxWallRise(pos); shakeFor(f, 0.25, 0.1);
       break;
     }
+    case 'chain': {
+      // CHAIN LIGHTNING: instantly zap the nearest enemy in front, then jump to a second enemy close by
+      const foes = fighters.filter(e => e.team !== f.team && active(e) && e.dodgeT <= 0);
+      let first = null, best = 1e9;
+      for (const e of foes) {
+        const to = e.pos.clone().sub(f.pos); to.y = 0; const d = to.length();
+        if (d < 16 && to.normalize().dot(dir) > Math.cos(0.6) && d < best) { best = d; first = e; }
+      }
+      const from = v3(f.pos.x, 1.4, f.pos.z).addScaledVector(dir, 0.7);
+      if (!first) { fxBolt(from, from.clone().addScaledVector(dir, 9), false); break; } // nothing in range: crackle into the air
+      const chain = [first];
+      const next = foes.filter(e => e !== first).sort((a, b) => a.pos.distanceTo(first.pos) - b.pos.distanceTo(first.pos))[0];
+      if (next && next.pos.distanceTo(first.pos) < 8) chain.push(next);
+      let prev = from;
+      for (const e of chain) {
+        const at = v3(e.pos.x, 1.3, e.pos.z);
+        fxBolt(prev, at, true);
+        zapHit(f, e, at.clone().sub(prev).setY(0).normalize(), 8, 9);
+        prev = at;
+      }
+      break;
+    }
     case 'gust': {
       for (const e of fighters) {
         if (e.team === f.team || !active(e) || e.dodgeT > 0) continue;
@@ -1427,7 +1472,41 @@ function doSpecial(f, dir) {
   }
 }
 // ---- ULTIMATES: charged by landing hits (and a little by taking them) ----
-const ULT_NAMES = { fire: 'INFERNO', water: 'TSUNAMI', earth: 'EARTHQUAKE', air: 'TORNADO' };
+const ULT_NAMES = { fire: 'INFERNO', water: 'TSUNAMI', earth: 'EARTHQUAKE', air: 'TORNADO', lightning: 'THUNDERSTORM' };
+// short name for the HUD box ("Thunderstorm" doesn't fit)
+const ultLabel = (el) => ({ lightning: 'Storm' })[el] || ULT_NAMES[el][0] + ULT_NAMES[el].slice(1).toLowerCase();
+// a direct lightning hit (chain lightning / thunderstorm strikes)
+function zapHit(f, e, dir, force, strain, isUlt = false) {
+  const mult = 1 + e.strain / 55;
+  if (dir.lengthSq() < 0.01) dir = v3(-f.side, 0, 0);
+  e.kb.addScaledVector(dir, force * mult);
+  e.strain = Math.min(160, e.strain + strain); e.stunT = 0.3; e.flashT = 0.15;
+  f.stats.hits++; e.lastHitBy = f; e.lastHitT = perfNow;
+  if (!isUlt) f.ult = Math.min(100, f.ult + 6);
+  e.ult = Math.min(100, e.ult + 3);
+  animF(e, 'hitB', 1.6);
+  fxHit(v3(e.pos.x, 1.3, e.pos.z), 'lightning', force * mult, dir);
+  sfx('hit', 'lightning', e.human || f.human);
+  hitNote(e, f, `+${strain}%`, ELEMENTS.lightning.css, isUlt);
+}
+// THUNDERSTORM: strikes are scheduled and land one after another (host-side game logic)
+let storms = [];
+function updateStorms(dt) {
+  for (const s of storms) {
+    s.t -= dt; if (s.t > 0) continue;
+    s.done = true;
+    const f = s.owner, foes = fighters.filter(e => e.team !== f.team && active(e));
+    const tgt = foes.length ? foes[(Math.random() * foes.length) | 0] : null;
+    const at = tgt ? v3(tgt.pos.x + rnd(1.2), 0, tgt.pos.z + rnd(1.2)) : v3(-f.side * (3 + Math.random() * 10), 0, rnd(12));
+    fxStrike(at);
+    for (const e of foes) {
+      if (e.dodgeT > 0) continue;
+      const to = e.pos.clone().sub(at); to.y = 0; const d = to.length();
+      if (d < 2.8) zapHit(f, e, d > 0.2 ? to.normalize() : v3(-f.side, 0, 0), 13 * (1 - d / 4.5), 12, true);
+    }
+  }
+  storms = storms.filter(s => !s.done);
+}
 function ultHit(f, e, dir, force, strain) {
   const mult = 1 + e.strain / 55;
   e.kb.addScaledVector(dir, force * mult);
@@ -1466,6 +1545,10 @@ function useUlt(f, dir) {
       spawnDebris(v3(e.pos.x, 0.2, e.pos.z), 8, 7, 0.22);
     }
     fxQuake(f, fwd.x);
+  } else if (f.el === 'lightning') {
+    // THUNDERSTORM: six lightning strikes rain down on the enemy team
+    animF(f, 'cast', 0.8);
+    for (let i = 0; i < 6; i++) storms.push({ owner: f, t: 0.25 + i * 0.24 });
   } else {
     // TORNADO: a slow twister that plows through everyone in its path
     animF(f,'cast', 0.9);
@@ -1875,7 +1958,7 @@ function controlRemote(f) {
   r.spc = r.ddg = r.ult = false;
 }
 
-const PREF_DEPTH = { earth: 1.2, water: 2.2, fire: 2.6, air: 3.2 };
+const PREF_DEPTH = { earth: 1.2, water: 2.2, fire: 2.6, air: 3.2, lightning: 2.8 };
 function controlAI(f, dt) {
   const ai = f.ai;
   const enemies = fighters.filter(e => e.team !== f.team && active(e));
@@ -1914,7 +1997,7 @@ function controlAI(f, dt) {
     const k = f.el;
     let incoming = false;
     for (const p of projectiles) if (p.team !== f.team && p.pos.distanceTo(f.pos) < 8) { incoming = true; break; }
-    const chance = k === 'air' ? (dist < 8 ? 1.2 : 0) : k === 'earth' ? (incoming ? 0.9 : 0.08) : k === 'fire' ? (dist < 18 ? 0.45 : 0) : 0.35;
+    const chance = k === 'lightning' ? (dist < 15 ? 0.6 : 0) : k === 'air' ? (dist < 8 ? 1.2 : 0) : k === 'earth' ? (incoming ? 0.9 : 0.08) : k === 'fire' ? (dist < 18 ? 0.45 : 0) : 0.35;
     if (Math.random() < chance * dt / ai.aggr) doSpecial(f, dir);
   }
   if (f.cd.d <= 0) {
@@ -2437,7 +2520,7 @@ function tick(dt, rdt) {
     pm('ai', t0); t0 = performance.now();
     for (const f of fighters) updateFighter(f, dt);
     pm('fighters+anim', t0); t0 = performance.now();
-    separate(); updateProjectiles(dt); updateWalls(dt); checkZones(); checkRoundEnd();
+    separate(); updateProjectiles(dt); updateWalls(dt); updateStorms(dt); checkZones(); checkRoundEnd();
     pm('projectiles', t0);
   } else if (state === 'roundEnd') {
     stateT -= rdt; idleAll(dt); updateProjectiles(dt); updateWalls(dt);
@@ -2458,7 +2541,7 @@ function tick(dt, rdt) {
   front.position.x += (fx - front.position.x) * (1 - Math.exp(-6 * dt)); frontGlow.position.x = front.position.x;
   frontGlow.material.opacity = 0.6 + Math.sin(perfNow * 5) * 0.25;
   let t1 = performance.now();
-  GLOW.update(dt); SMOKE.update(dt); updateDebris(dt); updateRings(dt); updateFloats(rdt);
+  GLOW.update(dt); SMOKE.update(dt); updateDebris(dt); updateRings(dt); updateFloats(rdt); updateBolts(rdt);
   pm('particles', t1); t1 = performance.now();
   updateCamera(rdt);
   jbT -= rdt; if (jbT <= 0) { jbT = 0.25; drawJumbo(); }
@@ -2516,9 +2599,43 @@ function fxQuake(f, fx) {
   spawnRing(v3(f.pos.x, 0.1, f.pos.z), 0xc49a6c, 0.5, 14, 0.8, null, 0.8, 1.5);
 }
 function fxDodge(f, dir) {
-  for (let i = 0; i < 12; i++) (f.el === 'earth' ? SMOKE : GLOW).emit(v3(f.pos.x, 0.3 + Math.random() * 1.5, f.pos.z), rv(1.5).addScaledVector(dir, -3), f.el === 'earth' ? COL.dust : { fire: COL.fireMid, water: COL.water, air: COL.air }[f.el], null, 0.5, 0.4, 0, 1, 2, 0.6);
+  for (let i = 0; i < 12; i++) (f.el === 'earth' ? SMOKE : GLOW).emit(v3(f.pos.x, 0.3 + Math.random() * 1.5, f.pos.z), rv(1.5).addScaledVector(dir, -3), f.el === 'earth' ? COL.dust : { fire: COL.fireMid, water: COL.water, air: COL.air, lightning: COL.spark }[f.el], null, 0.5, 0.4, 0, 1, 2, 0.6);
 }
 function fxClash(pos) { GLOW.emit(pos, v3(), COL.white, null, 2.2, 0.15, 0, 0.5); }
+// jagged lightning bolt between two points: thin glowing segments with random kinks, gone in a blink
+const bolts = [];
+const boltGeo = new THREE.CylinderGeometry(1, 1, 1, 5, 1, true);
+const UPV = v3(0, 1, 0);
+function fxBolt(a, b, big = false) {
+  const g = new THREE.Group(), mat = MAT.boltLine.clone(); mat.opacity = 1;
+  const len = a.distanceTo(b), n = Math.max(4, Math.round(len / 1.2)), side = perp(b.clone().sub(a));
+  let prev = a.clone();
+  for (let i = 1; i <= n; i++) {
+    const p = a.clone().lerp(b, i / n);
+    if (i < n) p.addScaledVector(side, rnd(len * 0.12)).add(v3(0, rnd(len * 0.08), 0));
+    const seg = new THREE.Mesh(boltGeo, mat), d = p.clone().sub(prev), L = d.length();
+    seg.position.copy(prev).addScaledVector(d, 0.5); seg.scale.set(big ? 0.12 : 0.08, L, big ? 0.12 : 0.08);
+    seg.quaternion.setFromUnitVectors(UPV, d.normalize()); g.add(seg);
+    prev = p;
+  }
+  scene.add(g); bolts.push({ g, mat, t: 0, life: big ? 0.28 : 0.18 });
+  GLOW.emit(b, v3(), COL.spark, null, big ? 2.2 : 1.2, 0.15, 0, 0.5);
+  for (let i = 0; i < 6; i++) GLOW.emit(b, rv(10), COL.spark, COL.sparkFade, 0.25, 0.25, 0, 0, 3);
+  sfx('shoot', 'lightning', true);
+}
+function updateBolts(rdt) {
+  for (let i = bolts.length - 1; i >= 0; i--) {
+    const b = bolts[i]; b.t += rdt;
+    b.mat.opacity = (1 - b.t / b.life) * (Math.random() < 0.3 ? 0.4 : 1); // flicker
+    if (b.t >= b.life) { scene.remove(b.g); b.mat.dispose(); bolts.splice(i, 1); }
+  }
+}
+function fxStrike(at) {
+  fxBolt(v3(at.x + rnd(3), 24, at.z + rnd(3)), v3(at.x, 0.05, at.z), true);
+  spawnRing(v3(at.x, 0.1, at.z), 0xffd23a, 0.4, 3.2, 0.45, null, 0.9, 2);
+  for (let i = 0; i < 20; i++) GLOW.emit(v3(at.x, 0.2, at.z), v3(rnd(10), Math.random() * 6, rnd(10)), COL.spark, COL.sparkFade, 0.35, 0.4, 8, 0, 2);
+  sfx('thunder'); flash(0.12); shake = Math.max(shake, 0.2);
+}
 // personal touches: floating numbers / screen shake only for the players involved
 function hitNote(target, owner, text, color, big, ko = false) {
   if (owner === human) spawnFloat(text, target, color, big);
@@ -2573,6 +2690,7 @@ fxInferno = rpcWrap('fxInferno', fxInferno); fxQuake = rpcWrap('fxQuake', fxQuak
 fxClash = rpcWrap('fxClash', fxClash); hitNote = rpcWrap('hitNote', hitNote); shakeFor = rpcWrap('shakeFor', shakeFor);
 ultNote = rpcWrap('ultNote', ultNote); outNote = rpcWrap('outNote', outNote); pushNote = rpcWrap('pushNote', pushNote);
 startSlow = rpcWrap('startSlow', startSlow); emoteShow = rpcWrap('emoteShow', emoteShow);
+fxBolt = rpcWrap('fxBolt', fxBolt); fxStrike = rpcWrap('fxStrike', fxStrike);
 
 // ---- host: send the game state to everyone ~20x per second ----
 function netSendAll(msg) { for (const c of NET.conns.values()) if (c.open) { try { c.send(msg); } catch (e) {} } }
@@ -2764,7 +2882,7 @@ function hostOnData(conn, msg) {
     }
     const counts = [0, 1].map(t => NET.lobby.filter(p => p.team === t).length);
     const name = cleanName(msg.name);
-    NET.lobby.push({ id, name, team: counts[0] <= counts[1] ? 0 : 1, el: ORDER[(Math.random() * 4) | 0], look: cleanLook(msg.look) });
+    NET.lobby.push({ id, name, team: counts[0] <= counts[1] ? 0 : 1, el: ORDER[(Math.random() * ORDER.length) | 0], look: cleanLook(msg.look) });
     toast(`${name} joined the room`, '#7dff9a'); sfx('zone');
     netLobbyBroadcast();
   } else if (msg.k === 'pick') {
@@ -2848,7 +2966,7 @@ function netHostStart() {
     for (const slot of [1, 0, 2]) {
       const h = hs.shift();
       if (h) roster.push({ team: t, slot, el: h.el, look: { ...h.look }, owner: h.id, name: h.name });
-      else { const el = ORDER[(Math.random() * 4) | 0]; roster.push({ team: t, slot, el, look: randomLook(el, t, used), owner: null, name: null }); }
+      else { const el = ORDER[(Math.random() * ORDER.length) | 0]; roster.push({ team: t, slot, el, look: randomLook(el, t, used), owner: null, name: null }); }
     }
   }
   const theme = arenaChoice === 'random' ? Object.keys(THEMES)[(Math.random() * 3) | 0] : arenaChoice;
@@ -2878,7 +2996,7 @@ function startOnlineMatch(roster, theme) {
     const S = ELEMENTS[human.el];
     document.getElementById('abSName').textContent = S.special.name;
     for (const id of ['abP', 'abS', 'abD', 'abU']) document.getElementById(id).style.setProperty('--elc', S.css);
-    document.getElementById('abUName').textContent = ULT_NAMES[human.el][0] + ULT_NAMES[human.el].slice(1).toLowerCase();
+    document.getElementById('abUName').textContent = ultLabel(human.el);
   }
   for (const fl of floats) fl.d.remove(); floats.length = 0;
   if (NET.mode === 'host') resetRound();
@@ -2986,7 +3104,7 @@ loadLooks((d, n) => {
 // test hook
 window.__game = { get state() { return state; }, get fighters() { return fighters; }, get F() { return F; }, get wins() { return wins; }, get round() { return round; }, startMatch,
   step(seconds) { for (let t = 0; t < seconds; t += 1 / 60) { pollP2(); advance(1 / 60); } updateTopUI(1 / 60); if (QUALITY[qIdx].bloom) composer.render(); else renderer.render(scene, camera); },
-  prof: PROF, pollPad };
+  prof: PROF, pollPad, fx: { bolt: (a, b, big) => fxBolt(new THREE.Vector3(...a), new THREE.Vector3(...b), big), render: () => composer.render() } };
 </script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 
 A 3v3 elemental arena game that runs in the browser (Three.js).
 
-Pick an element — **Fire, Water, Earth or Air** — and fight alongside two computer teammates.
+Pick an element — **Fire, Water, Earth, Air or Lightning** — and fight alongside two computer teammates.
 Hit the other team to push them back across the zone lines. Knock everyone off the back edge
 into the water, or hold more ground when time runs out. Win 2 rounds to win the match.
 
